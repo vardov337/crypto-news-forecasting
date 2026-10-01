@@ -23,7 +23,7 @@ import requests
 
 USER_AGENT = (
     "Mozilla/5.0 (compatible; academic-research-bot/0.1; "
-    "сбор метаданных новостей для научной статьи)"
+    "+https://github.com/vardov337/crypto-news-forecasting)"
 )
 HEADERS = {"User-Agent": USER_AGENT, "Accept-Language": "ru,en;q=0.8"}
 
