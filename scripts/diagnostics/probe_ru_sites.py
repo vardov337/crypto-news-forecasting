@@ -7,7 +7,7 @@
 Запросов делается несколько десятков, с паузой — это разведка, а не сбор данных.
 Результат печатается в консоль и сохраняется в results/metrics/ru_sites_probe.json.
 
-Запуск:  python scripts/01a_probe_ru_sites.py
+Запуск:  python scripts/diagnostics/probe_ru_sites.py
 """
 import pandas as pd
 

@@ -124,6 +124,60 @@ def _parse_month(content: bytes) -> pd.DataFrame:
     return frame[KEEP_COLUMNS].astype("float64")
 
 
+def fetch_month(
+    symbol: str,
+    interval: str,
+    month: str,
+    cache_dir: str | Path,
+    verify_checksums: bool = True,
+    pause_sec: float = 0.2,
+) -> tuple[bytes | None, str]:
+    """Один помесячный архив: из кэша или с сайта, со сверкой контрольной суммы.
+
+    Возвращает содержимое и откуда оно взято: "cache", "downloaded" (сумма сверена),
+    "downloaded_unverified" (файла с суммой на сайте нет) или "missing" (месяца нет —
+    до запуска пары или ещё не закрыт; это не ошибка).
+    """
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{symbol}-{interval}-{month}.zip"
+    local_path = cache_dir / filename
+    if local_path.exists():
+        return local_path.read_bytes(), "cache"
+
+    url = f"{BASE_URL}/{symbol}/{interval}/{filename}"
+    content = _download(url)
+    if content is None:
+        return None, "missing"
+    status = "downloaded_unverified"
+    if verify_checksums:
+        checksum = _download(url + ".CHECKSUM")
+        if checksum is not None:
+            if not _verify_checksum(content, checksum.decode("utf-8", "ignore")):
+                raise ValueError(
+                    f"Контрольная сумма не совпала: {filename}. "
+                    "Файл скачался с ошибкой, удалите его и повторите запуск."
+                )
+            status = "downloaded"
+    local_path.write_bytes(content)
+    time.sleep(pause_sec)
+    return content, status
+
+
+def load_months(symbol: str, months: list[str], cache_dir: str | Path,
+                interval: str = "15m") -> pd.DataFrame:
+    """Свечи за выбранные месяцы, без приведения к сетке. Нужны для сверок."""
+    frames = []
+    for month in months:
+        content, _ = fetch_month(symbol, interval, month, cache_dir)
+        if content is not None:
+            frames.append(_parse_month(content))
+    if not frames:
+        return pd.DataFrame(columns=KEEP_COLUMNS)
+    frame = pd.concat(frames).sort_index()
+    return frame[~frame.index.duplicated(keep="first")]
+
+
 def download_symbol(
     symbol: str,
     start: str,
@@ -137,41 +191,22 @@ def download_symbol(
 
     Скачанные архивы складываются в cache_dir: повторный запуск их не перекачивает.
     """
-    cache_dir = Path(cache_dir)
-    cache_dir.mkdir(parents=True, exist_ok=True)
     report = DownloadReport(symbol=symbol)
     frames: list[pd.DataFrame] = []
 
     for month in month_range(start, end):
         report.months_requested += 1
-        filename = f"{symbol}-{interval}-{month}.zip"
-        local_path = cache_dir / filename
-
-        if local_path.exists():
-            content = local_path.read_bytes()
+        content, status = fetch_month(symbol, interval, month, cache_dir,
+                                      verify_checksums=verify_checksums, pause_sec=pause_sec)
+        if status == "missing":
+            report.months_missing.append(month)
+            continue
+        if status == "cache":
             report.months_from_cache += 1
         else:
-            url = f"{BASE_URL}/{symbol}/{interval}/{filename}"
-            content = _download(url)
-            if content is None:
-                # Месяц до запуска пары или ещё не закрытый — это не ошибка
-                report.months_missing.append(month)
-                continue
-            if verify_checksums:
-                checksum = _download(url + ".CHECKSUM")
-                if checksum is not None:
-                    if _verify_checksum(content, checksum.decode("utf-8", "ignore")):
-                        report.checksum_ok += 1
-                    else:
-                        report.checksum_failed.append(month)
-                        raise ValueError(
-                            f"Контрольная сумма не совпала: {filename}. "
-                            "Файл скачался с ошибкой, удалите его и повторите запуск."
-                        )
-            local_path.write_bytes(content)
             report.months_downloaded += 1
-            time.sleep(pause_sec)
-
+            if status == "downloaded":
+                report.checksum_ok += 1
         frames.append(_parse_month(content))
 
     if not frames:

@@ -5,7 +5,7 @@
 статье это больше тридцати часов, пачками — часы или даже минуты.
 
 Несколько запросов на сайт, меньше минуты.
-Запуск:  python scripts/01c_probe_bulk_access.py
+Запуск:  python scripts/diagnostics/probe_bulk_access.py
 """
 import pandas as pd
 

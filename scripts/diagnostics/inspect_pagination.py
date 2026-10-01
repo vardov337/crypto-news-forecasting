@@ -9,7 +9,7 @@
               ищем сами даты и печатаем текст вокруг них — так видно карточку новости.
               Отдельно смотрим глубокую страницу: там должен появиться год.
 
-Запуск:  python scripts/01e_inspect_pagination.py
+Запуск:  python scripts/diagnostics/inspect_pagination.py
 """
 import json
 import re

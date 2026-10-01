@@ -5,7 +5,7 @@
 вообще можно собрать русскоязычные новости.
 
 Запросов около полусотни с паузой, примерно 3–5 минут.
-Запуск:  python scripts/01b_check_archive_depth.py
+Запуск:  python scripts/diagnostics/check_archive_depth.py
 """
 import pandas as pd
 

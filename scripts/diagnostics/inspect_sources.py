@@ -9,7 +9,7 @@
   Bits.Media: что на самом деле написано рядом со ссылками в ленте новостей.
               Если даты там есть обычным текстом, сбор ускорится в двадцать раз.
 
-Запуск:  python scripts/01d_inspect_sources.py
+Запуск:  python scripts/diagnostics/inspect_sources.py
 """
 import json
 import re
