@@ -28,6 +28,11 @@ URL_BLOCK = re.compile(r"<url>(.*?)</url>", re.S)
 LOC = re.compile(r"<loc>\s*([^<\s]+)")
 LASTMOD = re.compile(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})")
 
+# Отдельная статья: в последнем куске адреса есть хотя бы два дефиса.
+# Это отсекает оглавления рубрик вроде /basics/ или /history/, у которых
+# даты публикации нет и быть не должно.
+ARTICLE_SLUG = re.compile(r"/[^/]*-[^/]*-[^/]*/?$")
+
 
 @dataclass
 class DepthReport:
@@ -77,10 +82,13 @@ def read_entries(sitemap_url: str, pause: float) -> list[tuple[str, str | None]]
     entries = []
     for block in URL_BLOCK.findall(response.text):
         loc = LOC.search(block)
-        if not loc or NOT_AN_ARTICLE.search(loc.group(1)):
+        if not loc:
+            continue
+        url = loc.group(1)
+        if NOT_AN_ARTICLE.search(url):
             continue
         mod = LASTMOD.search(block)
-        entries.append((loc.group(1), mod.group(1) if mod else None))
+        entries.append((url, mod.group(1) if mod else None))
     return entries
 
 
@@ -120,11 +128,20 @@ def measure(name: str, index_url: str, pause: float = 1.0, samples: int = 4) -> 
     if dated:
         report.lastmod_min, report.lastmod_max = dated[0][0], dated[-1][0]
 
-    # Берём самые старые и самые свежие адреса: по ним видно обе границы архива
-    probe_urls = [u for _, u in dated[:samples]] + [u for _, u in dated[-samples:]]
-    if not probe_urls:
-        probe_urls = [u for u, _ in all_entries[:samples]]
-    for url in dict.fromkeys(probe_urls):
+    # Для проверки дат открываем только то, что похоже на отдельную статью:
+    # оглавления рубрик вроде /basics/ даты публикации не имеют.
+    articles = [(u, m) for u, m in all_entries if ARTICLE_SLUG.search(u)]
+    dated_articles = sorted(((m, u) for u, m in articles if m))
+
+    # Пробуем две стороны. По датам изменения — чтобы увидеть края, если даты честные.
+    # По порядку в карте — на случай, когда даты сброшены массовым обновлением:
+    # движки обычно пишут адреса в порядке появления, так что начало карты это старое.
+    probe_urls = [u for _, u in dated_articles[:samples]] + [u for _, u in dated_articles[-samples:]]
+    if articles:
+        step = max(1, len(articles) // max(samples, 1))
+        probe_urls += [u for u, _ in articles[::step][:samples]]
+        probe_urls += [u for u, _ in articles[-samples:]]
+    for url in list(dict.fromkeys(probe_urls))[:4 * samples]:
         value, source = published_date(url, pause)
         report.samples.append({"url": url, "published": value, "source": source})
     return report

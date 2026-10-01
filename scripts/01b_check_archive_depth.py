@@ -17,8 +17,9 @@ from cryptonews.utils import get_logger, run_manifest, save_json
 # Profinvestment исключён: 1688 адресов против десятков тысяч у остальных,
 # даты изменения сброшены массовым обновлением, а проверенные страницы оказались
 # справочными карточками монет, а не новостями.
+# ForkLog измерен 01.10.2026: 56 431 материал, публикации с 2014-09-13.
+# Повторно его не читаем — 30 карт сайта это лишние несколько минут.
 SITES = [
-    ("ForkLog", "https://forklog.com/sitemap.xml"),
     ("Bits.Media", "https://bits.media/sitemap.php"),
 ]
 
