@@ -1,0 +1,14 @@
+# Заполните авторов и адрес репозитория перед первым релизом (задача 10.2).
+cff-version: 1.2.0
+message: "Если вы используете этот код, сошлитесь на него по данным ниже."
+title: "Воспроизводимое сравнение моделей прогнозирования криптовалют с учётом новостного фона"
+type: software
+authors:
+  - family-names: "<Фамилия>"
+    given-names: "<Имя>"
+  - family-names: "<Фамилия>"
+    given-names: "<Имя>"
+version: 0.1.0
+date-released: "2026-09-22"
+license: MIT
+repository-code: "https://github.com/<user>/<repo>"

@@ -1,0 +1,20 @@
+# Прямые зависимости проекта (нижние границы версий).
+# Точные версии окружения, в котором получены результаты, фиксирует
+# scripts/00_check_env.py в results/env/requirements-lock.txt.
+numpy>=1.26
+pandas>=2.2
+pyarrow>=15
+pyyaml>=6.0
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.0
+python-binance>=1.0.19
+scikit-learn>=1.4
+xgboost>=2.0
+statsmodels>=0.14
+arch>=6.3
+torch>=2.2
+transformers>=4.40
+matplotlib>=3.8
+tqdm>=4.66
+pytest>=8.0

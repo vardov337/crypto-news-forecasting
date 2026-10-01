@@ -1,0 +1,145 @@
+# Конфигурация эксперимента. Все параметры протокола (PROTOCOL.md) задаются здесь,
+# код берёт их только отсюда. Пометка «⚑» — решение ждёт подтверждения (задача 0.5).
+
+project:
+  name: cryptonews
+  protocol_version: "0.1-draft"
+
+paths:
+  data_dir: data          # переопределяется переменной окружения CRYPTONEWS_DATA_DIR (например, папка на Google Drive)
+  results_dir: results    # переопределяется переменной окружения CRYPTONEWS_RESULTS_DIR
+
+time:
+  timezone: UTC
+  frequency: 1h
+  sample_start: null      # правило: первая дата, с которой доступны все источники (решения 1.5 и 3.3)
+  sample_end: null        # правило: последняя дата покрытия CryptoVision (задача 3.3)
+
+data:
+  prices:
+    source: binance_spot
+    symbols: [BTCUSDT, ETHUSDT]
+    interval: 1h
+    history_start: "2017-08-17"     # начало истории пар BTCUSDT и ETHUSDT на Binance
+  news_en:
+    dataset: CryptoVision
+    doi: "10.17632/3c3xtxtfb6"
+    version: 2                      # ⚑ проверить поля файла в задаче 3.3
+    keep_columns: [URL, Title, Date_Time, Coin_Type]   # точные названия уточнить по файлу
+    source_timezone: null           # определяется в задаче 3.4 сверкой с Binance
+  news_ru:
+    sites: [bits.media, rbc.ru/crypto, profinvestment.com]   # итоговый список — решение 1.5
+    source_timezone: Europe/Moscow
+    request_interval_sec: 1.0       # не чаще одного запроса в секунду
+    coin_keywords:
+      BTCUSDT: [биткоин, биткойн, bitcoin, btc]
+      ETHUSDT: [эфир, эфириум, ethereum, eth, ether]
+    market_wide_rule: both_assets   # ⚑ общерыночные новости учитываются для обоих активов
+  dedup:
+    window_hours: 24
+    keep: earliest
+
+sentiment:
+  score: p_pos_minus_p_neg
+  en:
+    model: null        # задача 5.5: burakutf/finetuned-finbert-crypto или ProsusAI/finbert
+    revision: null     # хеш коммита на Hugging Face
+  ru:
+    model: blanchefort/rubert-base-cased-sentiment
+    revision: null
+  batch_size: 64
+  max_length: 128
+  annotation:
+    sample_size_per_language: 400
+    second_annotator_sample: 100
+
+features:
+  price:
+    return_lags: [1, 2, 3, 4, 5, 6]
+    realized_vol_windows: [6, 24]
+    volume_change: true
+  news:
+    languages: [en, ru]
+    rolling_window: 6
+    trend_window: 3
+    sentiment_lag: 1
+    no_news_fill: 0.0
+  feature_sets:
+    P: [price]
+    P_EN: [price, en]
+    P_RU: [price, ru]
+    P_EN_RU: [price, en, ru]
+
+validation:
+  scheme: expanding_walk_forward
+  test_months: 24                 # ⚑
+  fold_months: 3                  # ⚑ переобучение раз в квартал
+  tuning_window_months: 3         # окно выбора гиперпараметров перед тестом
+  early_stopping_fraction: 0.1
+
+seeds:
+  default: [0, 1, 2, 3, 4]        # Random Forest, XGBoost
+  lstm: [0, 1, 2]
+
+models:
+  naive_zero: {}
+  naive_mean: {}
+  arima:
+    p: [0, 1, 2, 3]
+    q: [0, 1, 2, 3]
+    d: 0
+    criterion: aic
+  arimax:
+    order_from: arima
+    exog_feature_sets: [P_EN, P_RU, P_EN_RU]   # экзогенные — только новостные признаки
+  random_forest:
+    n_estimators: [300]
+    max_depth: [5, 10, null]
+    min_samples_leaf: [50, 200]
+    max_features: [sqrt, 0.5]
+  xgboost:
+    n_estimators: 1000
+    early_stopping_rounds: 50
+    learning_rate: [0.01, 0.05]
+    max_depth: [3, 5]
+    min_child_weight: [10, 50]
+    subsample: [0.8]
+    colsample_bytree: [0.8]
+    reg_lambda: [1.0]
+  lstm:
+    framework: pytorch            # ⚑
+    lookback: [12, 24]
+    hidden_size: [32, 64]         # второй слой вдвое меньше первого
+    num_layers: 2
+    dropout: 0.2
+    learning_rate: 0.001
+    batch_size: 256
+    max_epochs: 50
+    patience: 5
+    scale_target: true
+
+evaluation:
+  metrics: [rmse, mae, directional_accuracy, r2_oos]
+  dm_test: {loss: squared, hac: newey_west, alpha: 0.05, multiple_testing: holm}
+  pt_test: {alpha: 0.05}
+  mcs: {alpha: 0.10, loss: squared, bootstrap_reps: 1000}
+  strategy:
+    primary: long_flat            # ⚑
+    secondary: long_short
+    costs_bp: [0, 5, 10, 20]
+    primary_cost_bp: 10           # ⚑ базовая комиссия спотового рынка Binance
+    annualization_hours: 8760
+    benchmark: buy_and_hold
+  bootstrap:
+    method: stationary
+    mean_block_hours: 24
+    reps: 2000
+  selection:
+    primary_metric: sharpe_net
+    cost_bp: 10
+    require_significance: true
+
+diagnostics:
+  max_abs_hourly_return: 0.20
+  shift_test_hours: [1, 2, 3, 24]
+  placebo_permutations: 20
