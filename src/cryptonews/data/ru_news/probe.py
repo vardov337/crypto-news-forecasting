@@ -46,6 +46,11 @@ MINUTE_PRECISION = re.compile(r"\d{1,2}:\d{2}")
 TIMEZONE_HINT = re.compile(r"(Z|[+-]\d{2}:?\d{2}|GMT|MSK|\+0300)")
 YEAR_IN_TEXT = re.compile(r"(20[0-2]\d)")
 
+# Карты сайта, в которых лежат новости, и те, которые заведомо не нужны
+ARTICLE_SITEMAP = re.compile(r"(news|post|article|iblock|archive)", re.I)
+SKIP_SITEMAP = re.compile(
+    r"(author|tag|term|categor|page-sitemap|pairs|converter|quiz|calculator|files|image)", re.I)
+
 # Адреса, которые новостями не являются: файлы, разделы, страницы со служебной информацией
 NOT_AN_ARTICLE = re.compile(
     r"\.(png|jpe?g|gif|svg|webp|ico|css|js|pdf|xml|zip)(\?|$)"
@@ -65,6 +70,8 @@ class SiteReport:
     robots_note: str = ""
     sitemaps: list[str] = field(default_factory=list)
     sitemap_children: list[str] = field(default_factory=list)
+    sitemap_details: list[dict] = field(default_factory=list)
+    sitemap_urls_total: int = 0
     sitemap_kind: str = ""
     rss_url: str | None = None
     rss_items: int = 0
@@ -77,6 +84,7 @@ class SiteReport:
     has_timezone: bool | None = None
     archive_hint: str = ""
     earliest_year: str | None = None
+    earliest_date: str | None = None
     notes: list[str] = field(default_factory=list)
 
     def verdict(self) -> str:
@@ -141,7 +149,8 @@ def find_rss(base: str, html: str | None, report: SiteReport, pause: float) -> N
             urljoin(base, m) for m in
             re.findall(r'<link[^>]+type="application/rss\+xml"[^>]+href="([^"]+)"', html, re.I)
         ]
-    candidates += [urljoin(base, p) for p in ("/feed", "/rss2/", "/rss/", "/feed/")]
+    candidates += [urljoin(base, p) for p in
+                   ("/feed", "/feed/", "/rss2/", "/rss/", "/rss.xml", "/?feed=rss2")]
 
     for url in dict.fromkeys(candidates):
         response = _get(url)
@@ -159,8 +168,8 @@ def find_rss(base: str, html: str | None, report: SiteReport, pause: float) -> N
         return
 
 
-def read_sitemaps(report: SiteReport, pause: float) -> None:
-    """Смотрит, как устроена карта сайта, и достаёт из неё адреса новостей."""
+def read_sitemaps(report: SiteReport, pause: float, max_children: int = 4) -> None:
+    """Разбирает карту сайта: какие в ней разделы, сколько адресов и за какие годы."""
     if not report.sitemaps:
         return
     response = _get(report.sitemaps[0])
@@ -173,29 +182,49 @@ def read_sitemaps(report: SiteReport, pause: float) -> None:
     children = re.findall(r"<sitemap>\s*<loc>\s*([^<\s]+)", text)
     if children:
         report.sitemap_kind = f"указатель на {len(children)} карт"
-        report.sitemap_children = children[:12]
-        years = sorted({y for child in children for y in YEAR_IN_TEXT.findall(child)})
-        if years:
-            report.earliest_year = years[0]
-        target = children[-1]
+        report.sitemap_children = children[:15]
+        # Берём только карты с новостями: карты авторов, рубрик и картинок пропускаем
+        picked = [c for c in children if ARTICLE_SITEMAP.search(c) and not SKIP_SITEMAP.search(c)]
+        if not picked:
+            picked = [c for c in children if not SKIP_SITEMAP.search(c)] or children
+        # Первые и последние карты списка: на этих краях обычно самые свежие и самые старые записи
+        half = max(1, max_children // 2)
+        targets = list(dict.fromkeys(picked[:half] + picked[-half:]))
     else:
         report.sitemap_kind = "одна карта со списком адресов"
-        target = report.sitemaps[0]
+        targets = [report.sitemaps[0]]
 
-    lastmods = re.findall(r"<lastmod>\s*(\d{4})", text)
-    if lastmods and not report.earliest_year:
-        report.earliest_year = min(lastmods)
+    dates_seen: list[str] = []
+    for target in targets:
+        if target != report.sitemaps[0]:
+            response = _get(target)
+            time.sleep(pause)
+            if response is None or response.status_code != 200:
+                report.sitemap_details.append({
+                    "url": target, "urls": 0,
+                    "status": response.status_code if response else "нет ответа",
+                })
+                continue
+            child_text = response.text
+        else:
+            child_text = text
 
-    if report.article_urls:
-        return
-    if target != report.sitemaps[0]:
-        response = _get(target)
-        time.sleep(pause)
-        if response is None or response.status_code != 200:
-            return
-        text = response.text
-    urls = re.findall(r"<url>\s*<loc>\s*([^<\s]+)", text)
-    report.article_urls = [u for u in urls if not NOT_AN_ARTICLE.search(u)][:3]
+        locs = re.findall(r"<url>\s*<loc>\s*([^<\s]+)", child_text)
+        mods = re.findall(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})", child_text)
+        dates_seen += mods
+        report.sitemap_urls_total += len(locs)
+        report.sitemap_details.append({
+            "url": target, "urls": len(locs), "status": 200,
+            "first": min(mods) if mods else None,
+            "last": max(mods) if mods else None,
+        })
+        if len(report.article_urls) < 3:
+            fresh = [u for u in locs if not NOT_AN_ARTICLE.search(u)]
+            report.article_urls += fresh[:3 - len(report.article_urls)]
+
+    if dates_seen:
+        report.earliest_date = min(dates_seen)
+        report.earliest_year = report.earliest_date[:4]
 
 
 def check_articles(report: SiteReport, pause: float) -> None:
@@ -277,8 +306,15 @@ def format_report(report: SiteReport) -> str:
     ]
     for child in report.sitemap_children:
         lines.append(f"      {child}")
+    if report.sitemap_details:
+        lines.append(f"  Прочитано карт:    {len(report.sitemap_details)}, "
+                     f"адресов в них: {report.sitemap_urls_total}")
+        for d in report.sitemap_details:
+            lines.append(f"      {d['url']}")
+            lines.append(f"            адресов: {d['urls']}, даты: "
+                         f"{d.get('first') or '—'} … {d.get('last') or '—'}")
     lines += [
-        f"  Ранний год в карте:{report.earliest_year or ' не определён'}",
+        f"  Самая ранняя дата: {report.earliest_date or 'не определена'}",
         f"  Архив:             {report.archive_hint}",
         "  Проверенные новости:",
     ]

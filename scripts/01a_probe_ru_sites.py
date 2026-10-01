@@ -45,7 +45,8 @@ def main() -> None:
         "robots разрешает": {True: "да", False: "нет", None: "нет правила"}[r.robots_allows],
         "RSS": "да" if r.rss_url else "нет",
         "Карта сайта": "да" if r.sitemaps else "нет",
-        "Ранний год": r.earliest_year or "—",
+        "Ранняя дата": r.earliest_date or "—",
+        "Адресов в картах": r.sitemap_urls_total,
         "Время до минут": {True: "да", False: "нет", None: "неизвестно"}[r.has_minutes],
         "Вердикт": r.verdict(),
     } for r in reports])

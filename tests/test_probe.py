@@ -65,8 +65,19 @@ RSS = """<rss><channel>
 </channel></rss>"""
 SITEMAP_INDEX = """<sitemapindex>
 <sitemap><loc>https://site.ru/post-sitemap-2017.xml</loc></sitemap>
+<sitemap><loc>https://site.ru/author-sitemap.xml</loc></sitemap>
 <sitemap><loc>https://site.ru/post-sitemap-2026.xml</loc></sitemap>
 </sitemapindex>"""
+SITEMAP_2017 = """<urlset>
+<url><loc>https://site.ru/news/staraya-novost</loc><lastmod>2017-01-15</lastmod></url>
+<url><loc>https://site.ru/news/vtoraya-staraya</loc><lastmod>2017-03-02</lastmod></url>
+</urlset>"""
+SITEMAP_2026 = """<urlset>
+<url><loc>https://site.ru/news/svezhaya-novost</loc><lastmod>2026-09-30</lastmod></url>
+</urlset>"""
+SITEMAP_AUTHORS = """<urlset>
+<url><loc>https://site.ru/author/ivanov</loc><lastmod>2015-01-01</lastmod></url>
+</urlset>"""
 ARTICLE = '<html><time datetime="2026-10-01T11:47:00+03:00">1 октября</time></html>'
 
 
@@ -79,6 +90,12 @@ def fake_site(url, headers=None, timeout=25):
         return FakeResponse(RSS)
     if url.endswith("sitemap_index.xml"):
         return FakeResponse(SITEMAP_INDEX)
+    if url.endswith("post-sitemap-2017.xml"):
+        return FakeResponse(SITEMAP_2017)
+    if url.endswith("post-sitemap-2026.xml"):
+        return FakeResponse(SITEMAP_2026)
+    if url.endswith("author-sitemap.xml"):
+        return FakeResponse(SITEMAP_AUTHORS)
     if "/news/" in url:
         return FakeResponse(ARTICLE)
     return FakeResponse("", 404)
@@ -91,11 +108,16 @@ def test_probe_site_uses_rss_and_sitemap(monkeypatch):
     assert report.reachable and report.robots_allows is True
     assert report.robots_crawl_delay == 2.0
     assert report.rss_url == "https://site.ru/feed" and report.rss_items == 4
-    # картинка и первая ссылка на сам сайт в список новостей не попадают
-    assert report.article_urls == ["https://site.ru/news/bitcoin-rastet",
-                                   "https://site.ru/news/efir-obnovlenie"]
-    assert report.sitemap_kind.startswith("указатель на 2")
-    assert report.earliest_year == "2017"
+    # картинка и первая ссылка на сам сайт в список новостей не попадают,
+    # список дополняется адресами из карты сайта до трёх штук
+    assert report.article_urls[:2] == ["https://site.ru/news/bitcoin-rastet",
+                                       "https://site.ru/news/efir-obnovlenie"]
+    assert len(report.article_urls) == 3
+    assert report.sitemap_kind.startswith("указатель на 3")
+    # карта авторов пропущена, поэтому дата 2015 года в расчёт не идёт
+    assert report.earliest_date == "2017-01-15"
+    assert report.sitemap_urls_total == 3
+    assert all("author" not in d["url"] for d in report.sitemap_details)
     assert report.time_source == "тег <time datetime>"
     assert report.has_minutes is True and report.has_timezone is True
     assert report.verdict().startswith("Берём")
