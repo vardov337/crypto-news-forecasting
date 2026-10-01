@@ -30,7 +30,7 @@ data:
     keep_columns: [URL, Title, Date_Time, Coin_Type]   # точные названия уточнить по файлу
     source_timezone: null           # определяется в задаче 3.4 сверкой с Binance
   news_ru:
-    sites: [forklog.com, bits.media]   # решение 1.5 от 01.10.2026
+    sites: [forklog.com]   # решение 1.5 от 01.10.2026; bits.media отложен (см. PROTOCOL.md, раздел 12)
     source_timezone: Europe/Moscow
     request_interval_sec: 1.0       # не чаще одного запроса в секунду
     coin_keywords:
