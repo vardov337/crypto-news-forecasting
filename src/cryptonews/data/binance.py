@@ -54,6 +54,7 @@ class DownloadReport:
     checksum_ok: int = 0
     checksum_failed: list[str] = field(default_factory=list)
     rows_raw: int = 0
+    rows_off_grid: int = 0
     rows_on_grid: int = 0
     gaps: list[dict] = field(default_factory=list)
     first_timestamp: str | None = None
@@ -179,6 +180,10 @@ def download_symbol(
     prices = pd.concat(frames).sort_index()
     prices = prices[~prices.index.duplicated(keep="first")]
     report.rows_raw = len(prices)
+    # Свечи, время которых не выровнено на целый час: Binance писал такие после
+    # аварийной остановки в феврале 2018 года. На часовую сетку они не ложатся.
+    off_grid = (prices.index.minute != 0) | (prices.index.second != 0)
+    report.rows_off_grid = int(off_grid.sum())
 
     grid = pd.date_range(prices.index[0], prices.index[-1], freq="h", tz="UTC")
     prices = prices.reindex(grid)
@@ -246,6 +251,7 @@ def coverage_table(reports: list[DownloadReport]) -> pd.DataFrame:
             "Конец (UTC)": report.last_timestamp,
             "Часов в сетке": report.rows_on_grid,
             "Свечей получено": report.rows_raw,
+            "Из них не на целом часе": report.rows_off_grid,
             "Пропущено часов": report.missing_hours,
             "Доля пропусков": round(report.missing_hours / max(report.rows_on_grid, 1), 5),
             "Месяцев скачано": report.months_downloaded + report.months_from_cache,

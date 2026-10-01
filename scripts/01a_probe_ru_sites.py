@@ -16,11 +16,12 @@ from cryptonews.config import load_config
 from cryptonews.data.ru_news import probe
 from cryptonews.utils import get_logger, run_manifest, save_json
 
+# RBC Crypto исключён по итогам первой разведки: сайт отвечает кодом 401 на обычный
+# запрос, то есть закрыт для всего, что не похоже на браузер. Защиту не обходим.
 SITES = [
     ("Bits.Media", "https://bits.media/"),
-    ("RBC Crypto", "https://www.rbc.ru/crypto/"),
     ("Profinvestment", "https://profinvestment.com/"),
-    ("ForkLog (резерв)", "https://forklog.com/"),
+    ("ForkLog", "https://forklog.com/"),
 ]
 
 
@@ -42,7 +43,9 @@ def main() -> None:
         "Сайт": r.name,
         "Доступен": "да" if r.reachable else "нет",
         "robots разрешает": {True: "да", False: "нет", None: "нет правила"}[r.robots_allows],
+        "RSS": "да" if r.rss_url else "нет",
         "Карта сайта": "да" if r.sitemaps else "нет",
+        "Ранний год": r.earliest_year or "—",
         "Время до минут": {True: "да", False: "нет", None: "неизвестно"}[r.has_minutes],
         "Вердикт": r.verdict(),
     } for r in reports])

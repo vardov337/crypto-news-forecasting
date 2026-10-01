@@ -51,6 +51,8 @@ def main() -> None:
             report.missing_hours, 100 * report.missing_hours / max(report.rows_on_grid, 1),
             report.months_downloaded + report.months_from_cache,
         )
+        if report.rows_off_grid:
+            log.info("%s: свечей не на целом часе (отброшены): %d", symbol, report.rows_off_grid)
         if report.gaps:
             log.info("%s: самые длинные пропуски биржи:", symbol)
             for gap in sorted(report.gaps, key=lambda g: -g["hours"])[:5]:
