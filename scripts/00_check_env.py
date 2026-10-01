@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 from cryptonews.cli import parse_args
-from cryptonews.config import load_config
+from cryptonews.config import PROJECT_ROOT, load_config
 from cryptonews.utils import get_logger, run_manifest, save_json
 
 
@@ -15,7 +15,10 @@ def main() -> None:
     cfg = load_config(args.config)
     log = get_logger()
 
+    version_file = PROJECT_ROOT / "VERSION"
+    version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "неизвестна"
     manifest = run_manifest(cfg)
+    manifest["repo_version"] = version
     try:
         import torch
         manifest["cuda_available"] = torch.cuda.is_available()
@@ -29,6 +32,7 @@ def main() -> None:
     freeze = subprocess.run([sys.executable, "-m", "pip", "freeze"], capture_output=True, text=True).stdout
     (out_dir / "requirements-lock.txt").write_text(freeze, encoding="utf-8")
 
+    log.info("Версия репозитория: %s", version)
     log.info("Python %s, коммит %s", manifest["python"], manifest["git_commit"] or "нет (не git-репозиторий)")
     for name, version in manifest["packages"].items():
         log.info("  %-16s %s", name, version)

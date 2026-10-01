@@ -18,6 +18,11 @@ DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "config.yaml"
 REQUIRED_SECTIONS = ("paths", "time", "data", "sentiment", "features",
                      "validation", "seeds", "models", "evaluation", "diagnostics")
 
+# Стандартные папки проекта. Создаются при загрузке конфигурации, чтобы любой скрипт
+# работал на чистой машине и в Colab, где папки для результатов ещё не существуют.
+DATA_SUBDIRS = ("raw/binance", "raw/cryptovision", "raw/ru_news", "interim", "processed")
+RESULTS_SUBDIRS = ("env", "predictions", "metrics", "tables", "figures")
+
 
 def _resolve(path: str | os.PathLike) -> Path:
     path = Path(path)
@@ -38,4 +43,13 @@ def load_config(path: str | os.PathLike | None = None) -> dict[str, Any]:
     paths["data_dir"] = _resolve(os.environ.get("CRYPTONEWS_DATA_DIR", paths.get("data_dir", "data")))
     paths["results_dir"] = _resolve(os.environ.get("CRYPTONEWS_RESULTS_DIR", paths.get("results_dir", "results")))
     cfg["_config_path"] = str(cfg_path.resolve())
+    ensure_dirs(cfg)
     return cfg
+
+
+def ensure_dirs(cfg: dict[str, Any]) -> None:
+    """Создаёт стандартные папки данных и результатов, если их ещё нет."""
+    for sub in DATA_SUBDIRS:
+        (cfg["paths"]["data_dir"] / sub).mkdir(parents=True, exist_ok=True)
+    for sub in RESULTS_SUBDIRS:
+        (cfg["paths"]["results_dir"] / sub).mkdir(parents=True, exist_ok=True)

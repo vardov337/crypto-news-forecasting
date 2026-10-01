@@ -54,6 +54,7 @@ bash run_all.sh                     # все шаги по порядку с con
 | --- | --- | --- |
 | 0 | `00_check_env.py` — окружение и версии | 0.6, 10.1 |
 | 1 | `01_download_prices.py` — свечи Binance | 3.1–3.2 |
+| 1а | `01a_probe_ru_sites.py` — разведка русскоязычных сайтов | 1.1–1.4 |
 | 2 | `02_prepare_news_en.py` — CryptoVision | 3.3–3.6 |
 | 3 | `03_scrape_news_ru.py` — сбор русскоязычных новостей | 2.1–2.5 |
 | 4 | `04_prepare_news_ru.py` — очистка русскоязычных новостей | 4.1–4.4 |

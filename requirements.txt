@@ -3,12 +3,11 @@
 # scripts/00_check_env.py в results/env/requirements-lock.txt.
 numpy>=1.26
 pandas>=2.2
-pyarrow>=15
+pyarrow>=15             # формат parquet для таблиц цен и признаков
 pyyaml>=6.0
-requests>=2.31
+requests>=2.31          # загрузка архивов data.binance.vision
 beautifulsoup4>=4.12
 lxml>=5.0
-python-binance>=1.0.19
 scikit-learn>=1.4
 xgboost>=2.0
 statsmodels>=0.14

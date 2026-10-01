@@ -18,6 +18,8 @@ time:
 data:
   prices:
     source: binance_spot
+    archive_base_url: "https://data.binance.vision/data/spot/monthly/klines"
+    verify_checksums: true
     symbols: [BTCUSDT, ETHUSDT]
     interval: 1h
     history_start: "2017-08-17"     # начало истории пар BTCUSDT и ETHUSDT на Binance
