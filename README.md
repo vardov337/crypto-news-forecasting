@@ -56,6 +56,7 @@ bash run_all.sh                     # все шаги по порядку с con
 | 1 | `01_download_prices.py` — свечи Binance | 3.1–3.2 |
 | 1а | `01a_probe_ru_sites.py` — разведка русскоязычных сайтов | 1.1–1.4 |
 | 1б | `01b_check_archive_depth.py` — глубина архива источников | 1.5 |
+| 1в | `01c_probe_bulk_access.py` — способы массового сбора новостей | 2.1–2.3 |
 | 2 | `02_prepare_news_en.py` — CryptoVision | 3.3–3.6 |
 | 3 | `03_scrape_news_ru.py` — сбор русскоязычных новостей | 2.1–2.5 |
 | 4 | `04_prepare_news_ru.py` — очистка русскоязычных новостей | 4.1–4.4 |
