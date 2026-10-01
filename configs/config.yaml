@@ -23,19 +23,21 @@ data:
     symbols: [BTCUSDT, ETHUSDT]
     interval: 1h
     history_start: "2017-08-17"     # начало истории пар BTCUSDT и ETHUSDT на Binance
+    history_end: "2026-08"          # последний скачиваемый месяц: фиксирован, чтобы результат не зависел от даты запуска
   news_en:
     dataset: CryptoVision
     doi: "10.17632/3c3xtxtfb6"
     version: 2                      # ⚑ проверить поля файла в задаче 3.3
-    keep_columns: [URL, Title, Date_Time, Coin_Type]   # точные названия уточнить по файлу
-    source_timezone: null           # определяется в задаче 3.4 сверкой с Binance
+    keep_columns: [url, title, date_time, coin_type]   # имена приводятся к единому виду кодом
+    source_timezone: null           # null — определить сверкой цен с Binance (задача 3.4); число — сдвиг от UTC в минутах
   news_ru:
     sites: [forklog.com]   # решение 1.5 от 01.10.2026; bits.media отложен (см. PROTOCOL.md, раздел 12)
-    source_timezone: Europe/Moscow
+    snapshot_date: "2026-10-01"     # дата сбора ForkLog; снимок метаданных архивируется вместе с кодом
+    source_timezone: UTC            # интерфейс ForkLog отдаёт date_gmt — время уже в UTC
     request_interval_sec: 1.0       # не чаще одного запроса в секунду
-    coin_keywords:
-      BTCUSDT: [биткоин, биткойн, bitcoin, btc]
-      ETHUSDT: [эфир, эфириум, ethereum, eth, ether]
+    # Привязка к монетам задаётся регулярными выражениями в src/cryptonews/data/coins.py:
+    # BTCUSDT — биткоин, биткойн, Bitcoin (кроме Cash, SV, Gold), BTC;
+    # ETHUSDT — эфириум, эфир (кроме «в эфире»), Ethereum (кроме Classic), Ether, ETH.
     market_wide_rule: both_assets   # ⚑ общерыночные новости учитываются для обоих активов
   dedup:
     window_hours: 24

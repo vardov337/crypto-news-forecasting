@@ -21,6 +21,7 @@ import pandas as pd
 from cryptonews.cli import parse_args
 from cryptonews.config import load_config
 from cryptonews.data import binance, cryptovision as cv
+from cryptonews.data import news as news_rules
 from cryptonews.utils import get_logger, run_manifest, save_json, sha256_file
 
 
@@ -69,6 +70,8 @@ def main() -> None:
     log.info("Лучшие варианты (сдвиг от UTC в минутах, правило, доля совпадений):")
     for c in tz.candidates:
         log.info("    %+5d  %-28s %.1f%%", c["offset_minutes"], c["rule"], 100 * c["share"])
+    log.info("Самые частые разности «время свечи минус метка», мин: %s",
+             ", ".join(f"{d['delta_min']} ({d['count']})" for d in tz.top_deltas))
     log.info("По месяцам:")
     for m in tz.per_month:
         log.info("    %s  совпадений %4d, лучший сдвиг %+5d, доля %.1f%%%s", m["month"], m["matched"],
@@ -94,14 +97,19 @@ def main() -> None:
 
     tables_dir = results_dir / "tables"
     stages.to_csv(tables_dir / "cleaning_news_en.csv", index=False, encoding="utf-8")
-    by_year = news.groupby(news["published_utc"].dt.year).size().rename("Новостей")
-    by_source = news["source"].value_counts().rename("Новостей")
-    by_year.to_csv(tables_dir / "news_en_by_year.csv", encoding="utf-8")
-    by_source.to_csv(tables_dir / "news_en_by_source.csv", encoding="utf-8")
+    summaries = news_rules.summary_tables(news)
+    for name, table in summaries.items():
+        table.to_csv(tables_dir / f"news_en_{name}.csv", encoding="utf-8")
 
     log.info("Этапы очистки:\n%s", stages.to_string(index=False))
-    log.info("По источникам:\n%s", by_source.head(10).to_string())
-    log.info("По годам:\n%s", by_year.to_string())
+    log.info("По источникам:\n%s", summaries["by_source"].head(10).to_string())
+    log.info("По годам:\n%s", summaries["by_year"].to_string())
+    log.info("Привязка к монетам по заголовку:\n%s", summaries["by_coin"].to_string(index=False))
+    if "coin_type" in news:
+        agree = news.assign(label=news["coin_type"].astype("string").str.lower())
+        check = agree.groupby("label")[["mentions_btc", "mentions_eth"]].mean().round(3)
+        log.info("Сверка с разметкой монет авторами набора (доля заголовков с упоминанием):\n%s",
+                 check.loc[check.index.isin(["bitcoin", "ethereum", "btc", "eth"])].to_string())
     log.info("Период в UTC: %s … %s", news["published_utc"].min(), news["published_utc"].max())
     log.info("Сохранено: %s", out_path)
 

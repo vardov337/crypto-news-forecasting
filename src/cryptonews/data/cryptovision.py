@@ -22,17 +22,15 @@ from __future__ import annotations
 
 import io
 import re
-import unicodedata
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlparse
 
 import numpy as np
 import pandas as pd
 import requests
 
-from cryptonews.data import binance
+from cryptonews.data import news as news_rules
 
 DATASET_ID = "3c3xtxtfb6"
 ZIP_URL = "https://data.mendeley.com/public-api/zip/{dataset_id}/download/{version}"
@@ -48,12 +46,12 @@ COLUMN_ALIASES = {
     "low": ("low",),
     "close": ("close",),
 }
-COIN_TO_SYMBOL = {"bitcoin": "BTCUSDT", "ethereum": "ETHUSDT"}
-
 # Кандидаты сдвига от UTC в минутах: целые и получасовые пояса от −12 до +14
 OFFSET_CANDIDATES = list(range(-12 * 60, 14 * 60 + 1, 30))
 CANDLE_MINUTES = 15
 MATCH_WINDOW_HOURS = 18
+PRICE_DECIMALS = 2          # шаг цены у BTCUSDT и ETHUSDT — один цент
+MIN_MATCHES_PER_MONTH = 20  # месяцы с меньшим числом совпадений не участвуют в проверке согласия
 
 
 # --------------------------------------------------------------------------- загрузка
@@ -150,6 +148,7 @@ class TimezoneReport:
     best_share: float = 0.0
     runner_up_share: float = 0.0
     candidates: list[dict] = field(default_factory=list)
+    top_deltas: list[dict] = field(default_factory=list)
     per_month: list[dict] = field(default_factory=list)
     months_agreeing: float = 0.0
     verdict: str = ""
@@ -168,7 +167,7 @@ class TimezoneReport:
 
 def pick_sample_months(news: pd.DataFrame, count: int = 16) -> list[str]:
     """Месяцы для сверки, равномерно по всему периоду — так видны и лето, и зима."""
-    months = sorted(news["date_time"].dt.to_period("M").astype(str).unique())
+    months = sorted(news["date_time"].dropna().dt.to_period("M").astype(str).unique())
     months = [m for m in months if m >= "2017-09"]  # раньше у Binance нет пар
     if len(months) <= count:
         return months
@@ -180,12 +179,14 @@ def match_candles(news: pd.DataFrame, candles: pd.DataFrame) -> pd.DataFrame:
     """Находит для каждой новости свечу Binance с теми же четырьмя ценами.
 
     Возвращает разницу в минутах между временем свечи (UTC) и меткой новости.
-    Берутся только однозначные совпадения внутри окна ±18 часов.
+    Берутся только однозначные совпадения внутри окна ±18 часов. Монету новости
+    знать не нужно: цены биткоина и эфира не совпадают никогда, поэтому свечи
+    обоих активов можно искать вместе.
     """
     def keyed(frame):
         out = frame.copy()
         for column in ("open", "high", "low", "close"):
-            out[f"k_{column}"] = frame[column].round(6)
+            out[f"k_{column}"] = frame[column].round(PRICE_DECIMALS)
         return out
 
     left = keyed(news.dropna(subset=["open", "high", "low", "close"]))
@@ -222,24 +223,25 @@ def detect_timezone(news: pd.DataFrame, candles_by_symbol: dict[str, pd.DataFram
                     sample_months: list[str], min_share: float = 0.9,
                     min_month_agreement: float = 0.9) -> TimezoneReport:
     report = TimezoneReport(sample_months=sample_months)
-    matches = []
-    for symbol, candles in candles_by_symbol.items():
-        coins = [c for c, s in COIN_TO_SYMBOL.items() if s == symbol]
-        subset = news[news["coin_type"].astype(str).str.strip().str.lower().isin(coins)]
-        month = subset["date_time"].dt.to_period("M").astype(str)
-        day = subset["date_time"].dt.day
-        # края месяца пропускаем: со сдвигом пояса новость могла уйти в соседний месяц,
-        # свечей которого мы не скачивали
-        subset = subset[month.isin(sample_months) & day.between(2, 27)]
-        report.records_checked += len(subset)
-        if len(subset) and len(candles):
-            matches.append(match_candles(subset, candles))
+    dated = news[news["date_time"].notna()]
+    month = dated["date_time"].dt.to_period("M").astype(str)
+    day = dated["date_time"].dt.day
+    # края месяца пропускаем: со сдвигом пояса новость могла уйти в соседний месяц,
+    # свечей которого мы не скачивали
+    subset = dated[month.isin(sample_months) & day.between(2, 27)]
+    report.records_checked = len(subset)
 
-    if not matches or sum(len(m) for m in matches) == 0:
+    frames = [c for c in candles_by_symbol.values() if len(c)]
+    matched = match_candles(subset, pd.concat(frames)) if frames and len(subset) else pd.DataFrame()
+    if matched.empty:
         report.verdict = "Совпадений с ценами Binance не найдено — пояс по ценам не определить"
         return report
-    matched = pd.concat(matches, ignore_index=True)
     report.records_matched = len(matched)
+
+    # Самые частые разности «время свечи минус метка»: если вывод не получится,
+    # по ним видно, как на самом деле набор выбирал свечу
+    counts = matched["delta_min"].round().value_counts().head(10)
+    report.top_deltas = [{"delta_min": int(k), "count": int(v)} for k, v in counts.items()]
 
     scores = score_offsets(matched["delta_min"])
     report.candidates = scores.head(6).to_dict("records")
@@ -249,28 +251,29 @@ def detect_timezone(news: pd.DataFrame, candles_by_symbol: dict[str, pd.DataFram
     report.best_share = float(best["share"])
     report.runner_up_share = float(scores.iloc[1]["share"])
 
-    matched["month"] = matched["date_time"].dt.to_period("M").astype(str)
+    matched = matched.assign(month=matched["date_time"].dt.to_period("M").astype(str))
     agree = []
-    for month, group in matched.groupby("month"):
-        month_scores = score_offsets(group["delta_min"])
-        top = month_scores.iloc[0]
+    for month_name, group in matched.groupby("month"):
+        if len(group) < MIN_MATCHES_PER_MONTH:
+            continue
+        top = score_offsets(group["delta_min"]).iloc[0]
         same = int(top["offset_minutes"]) == report.best_offset_minutes
         agree.append(same)
-        report.per_month.append({"month": month, "matched": len(group),
+        report.per_month.append({"month": month_name, "matched": len(group),
                                  "best_offset_minutes": int(top["offset_minutes"]),
                                  "share": round(float(top["share"]), 3), "agrees": same})
     report.months_agreeing = float(np.mean(agree)) if agree else 0.0
 
-    months_clear = all(m["share"] >= min_share for m in report.per_month)
+    months_clear = bool(report.per_month) and all(m["share"] >= min_share for m in report.per_month)
     if report.months_agreeing < min_month_agreement and months_clear:
         # внутри каждого месяца сдвиг однозначен, но между месяцами разный
         offsets = sorted({m["best_offset_minutes"] for m in report.per_month})
         report.verdict = (f"Сдвиг меняется от месяца к месяцу ({offsets} мин) — похоже на летнее "
                           "время; нужен пояс с переходами, а не постоянный сдвиг")
     elif report.best_share < min_share:
-        report.verdict = (f"Ненадёжно: лучший вариант объясняет только {report.best_share:.1%} совпадений")
+        report.verdict = f"Ненадёжно: лучший вариант объясняет только {report.best_share:.1%} совпадений"
     elif report.months_agreeing < min_month_agreement:
-        report.verdict = (f"Ненадёжно: с общим сдвигом согласны только {report.months_agreeing:.0%} месяцев")
+        report.verdict = f"Ненадёжно: с общим сдвигом согласны только {report.months_agreeing:.0%} месяцев"
     else:
         report.verdict = (f"Надёжно: {report.offset_label}, {report.best_rule}; "
                           f"объясняет {report.best_share:.1%} совпадений, "
@@ -284,64 +287,12 @@ def is_reliable(report: TimezoneReport) -> bool:
 
 # --------------------------------------------------------------------------- очистка
 
-def normalize_title(title: str) -> str:
-    """Заголовок для поиска повторов: нижний регистр, без знаков препинания и лишних пробелов."""
-    text = unicodedata.normalize("NFKC", str(title)).lower()
-    text = re.sub(r"[^\w\s]", " ", text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def dedup_titles(frame: pd.DataFrame, window_hours: int = 24) -> pd.DataFrame:
-    """Убирает повторы одного заголовка в пределах окна, оставляя самую раннюю публикацию.
-
-    Тот же заголовок через неделю повтором не считается: регулярные рубрики вроде
-    «Bitcoin price analysis» выходят с одним и тем же названием.
-    """
-    ordered = frame.assign(_norm=frame["title"].map(normalize_title))
-    ordered = ordered.sort_values(["_norm", "published_utc"])
-    keep = np.ones(len(ordered), dtype=bool)
-    norms = ordered["_norm"].to_numpy()
-    times = ordered["published_utc"].to_numpy()
-    window = np.timedelta64(window_hours, "h")
-    cluster_start = None
-    for i in range(len(ordered)):
-        if i > 0 and norms[i] == norms[i - 1] and times[i] - cluster_start <= window:
-            keep[i] = False
-        else:
-            cluster_start = times[i]
-    return ordered[keep].drop(columns="_norm").sort_values("published_utc")
-
-
-def source_of(url: str) -> str:
-    host = urlparse(str(url)).netloc.lower()
-    return host[4:] if host.startswith("www.") else host
-
-
 def clean(frame: pd.DataFrame, offset_minutes: int, dedup_window_hours: int = 24
           ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Перевод в UTC и очистка. Возвращает чистую таблицу и таблицу этапов очистки."""
-    stages = [("Записей в наборе", len(frame))]
+    """Перевод в UTC и очистка по общим правилам для обоих языков (модуль news).
 
-    work = frame[frame["date_time"].notna()].copy()
-    stages.append(("С корректной меткой времени", len(work)))
-
-    work["title"] = work["title"].astype("string").str.strip()
-    work["url"] = work["url"].astype("string").str.strip()
-    work = work[(work["title"].str.len() > 0) & (work["url"].str.len() > 0)]
-    stages.append(("С заголовком и адресом", len(work)))
-
+    Метка записана в поясе UTC + offset, значит время в UTC — это метка минус offset.
+    """
+    work = frame.copy()
     work["published_utc"] = (work["date_time"] - pd.Timedelta(minutes=offset_minutes)).dt.tz_localize("UTC")
-    work = work.sort_values("published_utc").drop_duplicates("url", keep="first")
-    stages.append(("Без повторов адреса", len(work)))
-
-    work = dedup_titles(work, window_hours=dedup_window_hours)
-    stages.append((f"Без повторов заголовка в пределах {dedup_window_hours} ч", len(work)))
-
-    work["source"] = work["url"].map(source_of)
-    work["coin_type"] = work.get("coin_type", pd.Series(index=work.index, dtype="string"))
-    columns = ["published_utc", "title", "url", "source", "coin_type"]
-    result = work[columns].reset_index(drop=True)
-
-    table = pd.DataFrame(stages, columns=["Этап", "Записей"])
-    table["Убрано на этапе"] = (-table["Записей"].diff()).fillna(0).astype(int)
-    return result, table
+    return news_rules.clean_utc(work, dedup_window_hours=dedup_window_hours)

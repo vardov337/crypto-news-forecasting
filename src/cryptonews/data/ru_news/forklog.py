@@ -48,6 +48,7 @@ class CollectReport:
     records_total: int = 0
     total_pages_declared: int | None = None
     total_records_declared: int | None = None
+    end_page: int | None = None
     first_date: str | None = None
     last_date: str | None = None
 
@@ -79,13 +80,16 @@ def parse_items(payload: str) -> list[dict]:
     return records
 
 
-def fetch_page(page: int, session: requests.Session, retries: int = 3,
-               timeout: int = 40, bust_cache: bool = False) -> tuple[list[dict] | None, dict]:
-    """Одна страница интерфейса. Возвращает записи и заголовки ответа.
+def fetch_page(page: int, session: requests.Session, retries: int = 3, timeout: int = 40,
+               bust_cache: bool = False) -> tuple[list[dict] | None, dict, int | None]:
+    """Одна страница интерфейса: записи, заголовки ответа (ключи в нижнем регистре), код.
 
     Ответы сайта идут через кэш, который местами ведёт себя странно: при разведке
     первая страница вернула одну запись вместо двадцати. Параметр bust_cache
     добавляет к запросу безвредный уникальный хвост, чтобы получить свежий ответ.
+
+    Код 400 WordPress возвращает на номер страницы за концом архива
+    (rest_post_invalid_page_number) — это конец сбора, а не ошибка.
     """
     url = f"{API_URL}?per_page={PER_PAGE}&page={page}&_fields={FIELDS}"
     if bust_cache:
@@ -96,13 +100,28 @@ def fetch_page(page: int, session: requests.Session, retries: int = 3,
         except requests.RequestException:
             time.sleep(2 ** attempt)
             continue
+        headers = {k.lower(): v for k, v in dict(response.headers).items()}
         if response.status_code == 200:
-            return parse_items(response.text), dict(response.headers)
-        # 400 на номере страницы за пределами архива — это конец, а не ошибка
+            return parse_items(response.text), headers, 200
         if response.status_code == 400:
-            return [], dict(response.headers)
+            return [], headers, 400
         time.sleep(2 ** attempt)
-    return None, {}
+    return None, {}, None
+
+
+def census(session: requests.Session) -> tuple[int | None, int | None]:
+    """Сколько записей и страниц на сайте прямо сейчас.
+
+    Берётся из свежего ответа в обход кэша. Первая версия сборщика брала эти числа
+    из первого попавшегося ответа, а он пришёл из устаревшего кэша и заявил
+    54 994 записи вместо 56 383 — отсюда были ложные предупреждения в отчёте.
+    """
+    _, headers, status = fetch_page(1, session, bust_cache=True)
+    if status != 200:
+        return None, None
+    total = int(headers.get("x-wp-total", 0) or 0) or None
+    pages = int(headers.get("x-wp-totalpages", 0) or 0) or None
+    return total, pages
 
 
 def load_existing(path: Path) -> tuple[dict[str, dict], set[int]]:
@@ -135,6 +154,11 @@ def collect(out_path: str | Path, pause: float = 1.0, max_pages: int = 3200,
     records, done_pages = load_existing(out_path)
     report = CollectReport(records_total=len(records))
     session = requests.Session()
+    report.total_records_declared, report.total_pages_declared = census(session)
+    if log and report.total_records_declared:
+        log.info("на сайте сейчас записей: %d, страниц: %d",
+                 report.total_records_declared, report.total_pages_declared or 0)
+    time.sleep(pause)
 
     with open(out_path, "a", encoding="utf-8") as sink:
         for page in range(1, max_pages + 1):
@@ -142,34 +166,37 @@ def collect(out_path: str | Path, pause: float = 1.0, max_pages: int = 3200,
                 report.pages_skipped += 1
                 continue
 
-            items, headers = fetch_page(page, session)
+            items, _, status = fetch_page(page, session)
             if items is None:
                 report.pages_failed.append(page)
                 if log:
                     log.warning("страница %d не ответила после повторов", page)
                 continue
-            if report.total_pages_declared is None and headers.get("X-WP-TotalPages"):
-                report.total_pages_declared = int(headers["X-WP-TotalPages"])
-                report.total_records_declared = int(headers.get("X-WP-Total", 0)) or None
+            if status == 400:
+                report.end_page = page
+                if log:
+                    log.info("страница %d за концом архива — сбор окончен", page)
+                break
 
-            inside_archive = (report.total_pages_declared is None
-                              or page < report.total_pages_declared)
-            # Неполная страница внутри архива — подозрение на странный ответ кэша.
-            # Повторяем запрос в обход кэша; если и так коротко, записываем в отчёт.
-            if len(items) < PER_PAGE and inside_archive:
-                retry, _ = fetch_page(page, session, bust_cache=True)
+            # Последняя страница архива бывает неполной, и это нормально.
+            # Неполная страница в середине — подозрение на ответ из кэша:
+            # повторяем в обход кэша, а если снова коротко — пишем в отчёт.
+            middle = report.total_pages_declared is None or page < report.total_pages_declared
+            if len(items) < PER_PAGE and middle:
+                retry, _, _ = fetch_page(page, session, bust_cache=True)
                 if retry is not None and len(retry) > len(items):
                     items = retry
                 if len(items) < PER_PAGE:
                     report.pages_short.append(page)
 
             if not items:
-                if inside_archive:
-                    report.pages_failed.append(page)
-                    continue
-                if log:
-                    log.info("страница %d пустая — архив закончился", page)
-                break
+                beyond = report.total_pages_declared and page > report.total_pages_declared
+                if beyond:
+                    report.end_page = page
+                    break
+                # пустой ответ с кодом 200 посреди архива — сбой, а не конец
+                report.pages_failed.append(page)
+                continue
 
             for item in items:
                 item["_page"] = page

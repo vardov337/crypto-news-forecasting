@@ -1,4 +1,8 @@
-"""Проверки сборщика ForkLog. Сеть не нужна."""
+"""Проверки сборщика ForkLog. Сеть не нужна.
+
+Имитация повторяет поведение настоящего сайта: по двадцать записей на странице,
+код 400 на номер страницы за концом архива, заголовки X-WP-Total и X-WP-TotalPages.
+"""
 import json
 import re
 
@@ -21,15 +25,30 @@ def make_page(page: int, count: int = 20) -> str:
     } for i in range(count)])
 
 
-def fake_api(pages_available: int = 3):
-    def get(self_or_url, *args, **kwargs):
-        url = args[0] if args else self_or_url
-        page = int(re.search(r"[?&]page=(\d+)", url).group(1))
-        headers = {"X-WP-Total": "56383", "X-WP-TotalPages": str(pages_available)}
-        if page > pages_available:
-            return FakeResponse("[]", 200, headers)
-        return FakeResponse(make_page(page), 200, headers)
+def page_number(url: str) -> int:
+    return int(re.search(r"[?&]page=(\d+)", url).group(1))
+
+
+def fake_api(pages: int = 3, last_page_count: int = 20):
+    total = (pages - 1) * 20 + last_page_count
+    headers = {"X-WP-Total": str(total), "X-WP-TotalPages": str(pages)}
+
+    def get(url):
+        page = page_number(url)
+        if page > pages:
+            return FakeResponse('{"code":"rest_post_invalid_page_number"}', 400)
+        count = last_page_count if page == pages else 20
+        return FakeResponse(make_page(page, count), 200, headers)
     return get
+
+
+def patch_session(monkeypatch, getter, calls=None):
+    def get(self, url, **kwargs):
+        if calls is not None:
+            calls.append(url)
+        return getter(url)
+    monkeypatch.setattr(forklog.requests.Session, "get", get)
+    monkeypatch.setattr(forklog.time, "sleep", lambda seconds: None)
 
 
 def test_clean_title_removes_markup_and_entities():
@@ -47,71 +66,74 @@ def test_parse_items_skips_records_without_date():
     assert forklog.parse_items(payload) == []
 
 
-def test_collect_walks_pages_and_writes_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(forklog.requests.Session, "get",
-                        lambda self, url, **kw: fake_api(3)(url))
+def test_collect_walks_pages_and_stops_on_400(tmp_path, monkeypatch):
+    patch_session(monkeypatch, fake_api(3))
     path = tmp_path / "forklog.jsonl"
     records, report = forklog.collect(path, pause=0, max_pages=10)
 
     assert report.pages_done == 3 and report.records_total == 60
-    assert report.total_records_declared == 56383
-    assert len(records) == 60
-    assert path.exists() and len(path.read_text(encoding="utf-8").strip().splitlines()) == 60
+    assert report.total_records_declared == 60 and report.total_pages_declared == 3
+    assert report.end_page == 4
+    assert report.pages_failed == [] and report.pages_short == []
+    assert len(path.read_text(encoding="utf-8").strip().splitlines()) == 60
+
+
+def test_last_short_page_is_not_an_anomaly(tmp_path, monkeypatch):
+    """Последняя страница архива неполная (у настоящего сайта — 3 записи из 20), это норма."""
+    patch_session(monkeypatch, fake_api(3, last_page_count=3))
+    records, report = forklog.collect(tmp_path / "f.jsonl", pause=0, max_pages=10)
+    assert report.records_total == 43
+    assert report.pages_short == [] and report.pages_failed == []
 
 
 def test_collect_resumes_without_refetching(tmp_path, monkeypatch):
-    monkeypatch.setattr(forklog.requests.Session, "get",
-                        lambda self, url, **kw: fake_api(3)(url))
+    patch_session(monkeypatch, fake_api(3))
     path = tmp_path / "forklog.jsonl"
     forklog.collect(path, pause=0, max_pages=10)
 
     calls = []
-
-    def counting_get(self, url, **kw):
-        calls.append(url)
-        return fake_api(3)(url)
-
-    monkeypatch.setattr(forklog.requests.Session, "get", counting_get)
+    patch_session(monkeypatch, fake_api(3), calls)
     records, report = forklog.collect(path, pause=0, max_pages=10)
-    # все три страницы уже собраны: повторно они не запрашиваются,
-    # нужен только один запрос, чтобы убедиться, что архив закончился
+    # уже собранные страницы не запрашиваются: только проверка числа записей
+    # на сайте и одна страница, чтобы увидеть конец архива
     assert report.pages_skipped == 3 and report.records_new == 0
     assert len(records) == 60
-    assert len(calls) == 1 and "&page=4&" in calls[0]
+    assert len(calls) == 2
+    assert "nocache" in calls[0] and page_number(calls[1]) == 4
 
 
-def test_collect_records_failed_page(tmp_path, monkeypatch):
-    def flaky(self, url, **kw):
-        if "&page=2&" in url:
-            return FakeResponse("", 500)
-        return fake_api(3)(url)
-    monkeypatch.setattr(forklog.requests.Session, "get", flaky)
-    monkeypatch.setattr(forklog.time, "sleep", lambda s: None)
-    _, report = forklog.collect(tmp_path / "f.jsonl", pause=0, max_pages=3)
+def test_failed_page_is_reported(tmp_path, monkeypatch):
+    good = fake_api(3)
+    patch_session(monkeypatch, lambda url: FakeResponse("", 500) if page_number(url) == 2
+                  and "nocache" not in url else good(url))
+    _, report = forklog.collect(tmp_path / "f.jsonl", pause=0, max_pages=10)
     assert report.pages_failed == [2]
-    assert report.pages_done == 2
+    assert report.pages_done == 2 and report.end_page == 4
 
 
 def test_short_page_is_retried_bypassing_cache(tmp_path, monkeypatch):
     """При разведке кэш сайта вернул одну запись вместо двадцати — повторяем в обход кэша."""
-    def cached_badly(self, url, **kw):
-        if "&page=1&" in url and "nocache" not in url:
-            headers = {"X-WP-Total": "60", "X-WP-TotalPages": "3"}
-            return FakeResponse(make_page(1, count=1), 200, headers)
-        return fake_api(3)(url)
-    monkeypatch.setattr(forklog.requests.Session, "get", cached_badly)
+    good = fake_api(3)
+
+    def cached_badly(url):
+        if page_number(url) == 1 and "nocache" not in url:
+            return FakeResponse(make_page(1, count=1), 200, {"X-WP-Total": "54994",
+                                                             "X-WP-TotalPages": "54994"})
+        return good(url)
+    patch_session(monkeypatch, cached_badly)
     records, report = forklog.collect(tmp_path / "f.jsonl", pause=0, max_pages=10)
     assert report.records_total == 60
     assert report.pages_short == []
+    # число записей берётся из свежего ответа, а не из устаревшего кэша
+    assert report.total_records_declared == 60
 
 
 def test_empty_page_inside_archive_is_not_the_end(tmp_path, monkeypatch):
-    """Пустой ответ посреди архива — сбой, а не конец: сбор идёт дальше."""
-    def hole(self, url, **kw):
-        if "&page=2&" in url:
-            return FakeResponse("[]", 200, {"X-WP-Total": "60", "X-WP-TotalPages": "3"})
-        return fake_api(3)(url)
-    monkeypatch.setattr(forklog.requests.Session, "get", hole)
+    """Пустой ответ с кодом 200 посреди архива — сбой, а не конец: сбор идёт дальше."""
+    good = fake_api(3)
+    patch_session(monkeypatch, lambda url: FakeResponse("[]", 200) if page_number(url) == 2
+                  else good(url))
     records, report = forklog.collect(tmp_path / "f.jsonl", pause=0, max_pages=10)
     assert report.pages_failed == [2]
     assert report.records_total == 40
+    assert report.end_page == 4

@@ -27,7 +27,7 @@ def main() -> None:
     symbols = prices_cfg["symbols"]
     interval = prices_cfg["interval"]
     start = prices_cfg["history_start"]
-    end = cfg["time"]["sample_end"] or binance.utc_now_month()
+    end = prices_cfg.get("history_end") or binance.utc_now_month()
 
     raw_dir = cfg["paths"]["data_dir"] / "raw" / "binance"
     cache_dir = raw_dir / "monthly_zip"

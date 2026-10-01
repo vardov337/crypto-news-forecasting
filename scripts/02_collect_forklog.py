@@ -52,10 +52,13 @@ def main() -> None:
     declared = report.total_records_declared
     if declared:
         coverage = len(frame) / declared
-        log.info("Полнота: собрано %d из %d заявленных сайтом (%.2f%%)",
+        log.info("Полнота: собрано %d, на сайте сейчас %d (%.2f%%)",
                  len(frame), declared, 100 * coverage)
         if coverage < 0.99:
             log.warning("Собрано меньше 99%% — запустите скрипт ещё раз.")
+        elif len(frame) < declared:
+            log.info("Разница %d — публикации, вышедшие после первого сбора; "
+                     "в период исследования они не входят.", declared - len(frame))
 
     by_year = frame.groupby(frame["published_utc"].dt.year).size()
     log.info("Материалов по годам:\n%s", by_year.to_string())

@@ -42,7 +42,11 @@ python scripts/00_check_env.py      # проверка окружения и ф�
 
 ### Google Colab
 
-Откройте `notebooks/00_colab_setup.ipynb`: он подключает Google Drive для данных, клонирует репозиторий, ставит пакет и проверяет окружение. Данные хранятся на Drive, путь к ним задаётся переменной `CRYPTONEWS_DATA_DIR`, поэтому код и данные не смешиваются.
+[![Открыть в Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/vardov337/crypto-news-forecasting/blob/main/notebooks/colab.ipynb)
+
+Ноутбук `notebooks/colab.ipynb` подключает Google Диск, скачивает свежую версию кода и запускает шаги
+пайплайна. Данные и результаты лежат на Диске, пути к ним задают переменные `CRYPTONEWS_DATA_DIR`
+и `CRYPTONEWS_RESULTS_DIR`, поэтому код и данные не смешиваются.
 
 ## Воспроизведение
 

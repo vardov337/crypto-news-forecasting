@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from cryptonews.data import cryptovision as cv
+from cryptonews.data import news as news_rules
 
 
 def make_candles(months=("2024-01", "2024-07"), seed=0) -> pd.DataFrame:
@@ -117,7 +118,7 @@ def test_dedup_titles_keeps_earliest_within_window_only():
         "published_utc": pd.to_datetime(["2024-01-01 10:00", "2024-01-01 15:00",
                                          "2024-01-05 10:00", "2024-01-01 11:00"], utc=True),
     })
-    kept = cv.dedup_titles(frame, window_hours=24)
+    kept = news_rules.dedup_titles(frame, window_hours=24)
     # повтор через 5 часов убран, тот же заголовок через 4 дня — отдельная новость
     assert len(kept) == 3
     assert pd.Timestamp("2024-01-01 15:00", tz="UTC") not in set(kept["published_utc"])
@@ -136,6 +137,7 @@ def test_clean_converts_to_utc_and_counts_stages():
     assert news.loc[0, "published_utc"] == pd.Timestamp("2024-01-01 10:00", tz="UTC")
     assert news.loc[0, "source"] == "coindesk.com"
     assert "close" not in news.columns  # цены набора в признаки не попадают
+    assert bool(news.loc[0, "mentions_btc"]) and not bool(news.loc[0, "mentions_eth"])
 
 
 def test_pick_sample_months_spreads_over_period():
@@ -143,3 +145,21 @@ def test_pick_sample_months_spreads_over_period():
     months = cv.pick_sample_months(pd.DataFrame({"date_time": times}), count=16)
     assert len(months) == 16
     assert months[0] >= "2017-09" and months[-1] >= "2025-07"
+
+
+def test_matching_does_not_need_coin_labels():
+    """Монета новости для сверки не нужна: свечи обоих активов ищутся вместе."""
+    candles = make_candles()
+    raw = make_news(candles, {"2024-01": 6, "2024-07": 6})
+    raw["Coin Type"] = "BTC"  # другая запись монеты, чем «Bitcoin»
+    eth = make_candles(seed=5) / 20  # «эфир»: другие цены
+    report = cv.detect_timezone(prepared(raw), {"BTCUSDT": candles, "ETHUSDT": eth},
+                                ["2024-01", "2024-07"])
+    assert report.best_offset_minutes == 360 and cv.is_reliable(report)
+    assert report.top_deltas[0]["delta_min"] <= -360 + 15
+
+
+def test_sample_months_ignore_missing_dates():
+    times = pd.Series(list(pd.date_range("2020-01-01", "2020-06-01", freq="7D")) + [pd.NaT])
+    months = cv.pick_sample_months(pd.DataFrame({"date_time": times}), count=16)
+    assert "NaT" not in months and months[0] == "2020-01"
