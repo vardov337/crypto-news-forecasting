@@ -19,6 +19,7 @@
 import json
 import os
 import time
+import traceback
 import zipfile
 from pathlib import Path
 
@@ -205,10 +206,17 @@ def main() -> None:
 
     device = sentiment.pick_device(allow_cpu=args.cpu)
     log.info("Считаю тональность на устройстве: %s", sentiment.device_name(device))
-    records = []
+    records, failures = [], []
     for candidate in sentiment.candidates_from_config(cfg):
-        records.append(score_candidate(candidate, news[candidate.language], hashes[candidate.language],
-                                       device, cfg, log))
+        try:
+            records.append(score_candidate(candidate, news[candidate.language], hashes[candidate.language],
+                                           device, cfg, log))
+        except Exception as error:  # одна неудачная модель не должна останавливать остальные
+            log.error("%s: посчитать не удалось — %s: %s\n%s", candidate.name, type(error).__name__,
+                      error, traceback.format_exc(limit=6))
+            failures.append({"language": candidate.language, "model": candidate.name,
+                             "error": f"{type(error).__name__}: {error}"})
+            sentiment.free_memory()
 
     table = pd.DataFrame([{
         "Язык": r["language"], "Модель": r["model"], "Ревизия": r["revision"][:8],
@@ -219,12 +227,15 @@ def main() -> None:
         "Проверочные фразы": f"{r['sanity_correct']}/{r['sanity_total']}", "Секунд": r["seconds"],
     } for r in records])
     table.to_csv(results_dir / "tables" / "sentiment_candidates.csv", index=False, encoding="utf-8")
-    save_json({"manifest": run_manifest(cfg), "models": records},
+    save_json({"manifest": run_manifest(cfg), "models": records, "failures": failures},
               results_dir / "metrics" / "sentiment_models.json")
     log.info("Сводка по моделям:\n%s", table.to_string(index=False))
     log.info("Ревизии моделей (будут зафиксированы в configs/config.yaml):")
     for r in records:
         log.info("    %s: %s  revision: %s", r["language"], r["model"], r["revision"])
+    if failures:
+        raise SystemExit("Не посчитаны модели: " + ", ".join(f["model"] for f in failures)
+                         + ". Пришлите вывод целиком; посчитанные модели при повторном запуске пересчитываться не будут.")
 
 
 if __name__ == "__main__":

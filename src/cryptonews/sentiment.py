@@ -198,6 +198,7 @@ class HFClassifier:
         self.name, self.revision, self.device, self.max_length = name, revision, device, max_length
         self.tokenizer = AutoTokenizer.from_pretrained(name, revision=revision)
         self.model = AutoModelForSequenceClassification.from_pretrained(name, revision=revision)
+        self.model.float()      # одинаковая точность для всех моделей, как бы ни были сохранены веса
         self.model.to(device)
         self.model.eval()
         self.id2label = {int(k): str(v) for k, v in self.model.config.id2label.items()}
@@ -227,9 +228,16 @@ class HFClassifier:
         return list(np.asarray(CLASSES)[probs.argmax(axis=1)])
 
     def close(self) -> None:
-        import torch
-
         del self.model
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        free_memory()
+
+
+def free_memory() -> None:
+    """Освобождает память видеокарты после модели."""
+    gc.collect()
+    try:
+        import torch
+    except ImportError:
+        return
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
