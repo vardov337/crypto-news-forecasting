@@ -1,3 +1,6 @@
+import pytest
+
+from cryptonews import config
 from cryptonews.config import REQUIRED_SECTIONS, load_config
 
 
@@ -28,3 +31,21 @@ def test_protocol_consistency():
 def test_data_dir_can_be_overridden(monkeypatch, tmp_path):
     monkeypatch.setenv("CRYPTONEWS_DATA_DIR", str(tmp_path))
     assert load_config()["paths"]["data_dir"] == tmp_path
+
+
+def test_colab_without_drive_paths_refuses_to_run(monkeypatch):
+    """После перезапуска Colab пути к Диску теряются — скрипт должен остановиться,
+    а не писать данные во временную папку."""
+    monkeypatch.setattr(config, "running_in_colab", lambda: True)
+    monkeypatch.setenv("CRYPTONEWS_DATA_DIR", "")
+    monkeypatch.setenv("CRYPTONEWS_RESULTS_DIR", "")
+    with pytest.raises(SystemExit, match="ячейки 1–3"):
+        load_config()
+
+
+def test_colab_with_drive_paths_runs(monkeypatch, tmp_path):
+    monkeypatch.setattr(config, "running_in_colab", lambda: True)
+    monkeypatch.setenv("CRYPTONEWS_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("CRYPTONEWS_RESULTS_DIR", str(tmp_path / "results"))
+    cfg = load_config()
+    assert cfg["paths"]["data_dir"] == tmp_path / "data"
