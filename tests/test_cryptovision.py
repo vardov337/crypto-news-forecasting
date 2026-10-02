@@ -163,3 +163,61 @@ def test_sample_months_ignore_missing_dates():
     times = pd.Series(list(pd.date_range("2020-01-01", "2020-06-01", freq="7D")) + [pd.NaT])
     months = cv.pick_sample_months(pd.DataFrame({"date_time": times}), count=16)
     assert "NaT" not in months and months[0] == "2020-01"
+
+
+# ----------------------------------------------------------- архив, скачанный вручную
+
+import io
+import zipfile
+
+import pytest
+
+CSV_TEXT = ("URL,Title,Date_Time,Coin_Type,Open,High,Low,Close\n"
+            "https://coindesk.com/a,Bitcoin rallies,2024-01-03 10:00:00,Bitcoin,1,2,0.5,1.5\n"
+            "https://coindesk.com/b,Ether dips,2024-01-03 11:00:00,Ethereum,1,2,0.5,1.5\n")
+
+
+def zip_bytes(members: dict[str, bytes]) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for name, content in members.items():
+            archive.writestr(name, content)
+    return buffer.getvalue()
+
+
+def test_obtain_extracts_download_all_archive(tmp_path):
+    """«Download All» кладёт таблицу в папку внутри архива, рядом бывает мусор macOS."""
+    (tmp_path / "3c3xtxtfb6-2.zip").write_bytes(zip_bytes({
+        "CryptoVision/CryptoDataSet.csv": CSV_TEXT.encode(),
+        "__MACOSX/CryptoVision/._CryptoDataSet.csv": b"junk",
+        "CryptoVision/readme.txt": b"about",
+    }))
+    files, origin = cv.obtain(tmp_path, version=2)
+    assert [f.name for f in files] == ["CryptoDataSet.csv"]
+    assert origin == "распакованы из архива в папке"
+    frame, info = cv.load_raw(files)
+    assert len(frame) == 2 and info[0]["used"]
+
+
+def test_obtain_handles_nested_archive(tmp_path):
+    inner = zip_bytes({"data/CryptoDataSet.csv": CSV_TEXT.encode()})
+    (tmp_path / "download.zip").write_bytes(zip_bytes({"CryptoVision.zip": inner}))
+    files, _ = cv.obtain(tmp_path, version=2)
+    assert [f.name for f in files] == ["CryptoDataSet.csv"]
+
+
+def test_obtain_explains_manual_download_on_403(tmp_path, monkeypatch):
+    class Forbidden:
+        status_code = 403
+        content = b""
+    monkeypatch.setattr(cv.requests, "get", lambda url, timeout=300: Forbidden())
+    with pytest.raises(SystemExit, match="Download All"):
+        cv.obtain(tmp_path, version=2)
+
+
+def test_load_raw_skips_files_without_needed_columns(tmp_path):
+    (tmp_path / "news.csv").write_text(CSV_TEXT, encoding="utf-8")
+    (tmp_path / "fields.csv").write_text("field,description\nURL,link\n", encoding="utf-8")
+    frame, info = cv.load_raw(cv.data_files(tmp_path))
+    assert len(frame) == 2
+    assert {i["file"]: i["used"] for i in info} == {"fields.csv": False, "news.csv": True}

@@ -1,8 +1,9 @@
 """Шаг 3 (задачи 3.3–3.6): англоязычные новости CryptoVision.
 
 Что делает скрипт:
-  1. берёт набор CryptoVision фиксированной версии (скачивает с Mendeley Data,
-     если его ещё нет в папке data/raw/cryptovision/);
+  1. берёт набор CryptoVision фиксированной версии из папки data/raw/cryptovision/:
+     таблицы или архив, скачанный в браузере кнопкой «Download All» на Mendeley
+     (автоматическое скачивание Mendeley с осени 2026 года отклоняет);
   2. определяет часовой пояс меток времени сверкой цен приложенных к новостям
      свечей с архивом Binance — для этого докачивает 15-минутные свечи за
      несколько месяцев;
@@ -41,14 +42,26 @@ def main() -> None:
     raw_dir = data_dir / "raw" / "cryptovision"
 
     # 1. Набор
-    csv_path, origin = cv.download(raw_dir, version=int(news_cfg["version"]))
-    log.info("CryptoVision: %s (%s), %.1f МБ", csv_path.name, origin, csv_path.stat().st_size / 1e6)
-    raw = pd.read_csv(csv_path, low_memory=False)
-    frame, mapping = cv.normalize_columns(raw)
-    log.info("Записей: %d. Колонки: %s", len(frame), mapping)
+    files, origin = cv.obtain(raw_dir, version=int(news_cfg["version"]))
+    log.info("CryptoVision, файлы %s:", origin)
+    for path in files:
+        log.info("    %s, %.1f МБ", path.name, path.stat().st_size / 1e6)
+    frame, files_info = cv.load_raw(files)
+    for item in files_info:
+        log.info("    %s: строк %d%s", item["file"], item["rows"],
+                 "" if item["used"] else " — пропущен, нет нужных колонок")
+    used = [i for i in files_info if i["used"]]
+    log.info("Записей: %d. Колонки: %s", len(frame), used[0]["columns"])
+    declared = news_cfg.get("declared_records")
+    if declared and abs(len(frame) - declared) > 0.01 * declared:
+        log.warning("Авторы набора заявляют %d записей, а прочитано %d — проверьте, "
+                    "та ли версия набора скачана и нет ли лишних файлов в папке", declared, len(frame))
 
+    raw_text = frame["date_time"].astype("string")
+    log.info("Примеры меток времени как в файле: %s", ", ".join(raw_text.dropna().head(3)))
     frame["date_time"], share_tz = cv.parse_times(frame["date_time"])
-    log.info("Меток времени с указанным поясом: %.1f%%", 100 * share_tz)
+    log.info("Меток времени с указанным поясом: %.1f%%, не разобрано: %d",
+             100 * share_tz, int(frame["date_time"].isna().sum()))
     if 0.05 < share_tz < 0.95:
         log.warning("Пояс указан только у части меток — проверьте формат времени в наборе")
     log.info("Метки времени «как записаны»: %s … %s",
@@ -78,8 +91,9 @@ def main() -> None:
                  m["best_offset_minutes"], 100 * m["share"], "" if m["agrees"] else "  ← не совпадает")
     log.info("ВЫВОД: %s", tz.verdict)
 
-    save_json({"manifest": run_manifest(cfg), "csv": str(csv_path), "csv_sha256": sha256_file(csv_path),
-               "column_mapping": mapping, "share_with_tz_suffix": share_tz, "timezone": tz.as_dict()},
+    save_json({"manifest": run_manifest(cfg),
+               "files": [{**i, "sha256": sha256_file(raw_dir / i["file"])} for i in files_info],
+               "share_with_tz_suffix": share_tz, "timezone": tz.as_dict()},
               results_dir / "metrics" / "cryptovision_timezone.json")
 
     expected = configured_offset(news_cfg.get("source_timezone"))

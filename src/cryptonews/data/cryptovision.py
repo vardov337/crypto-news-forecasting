@@ -56,44 +56,102 @@ MIN_MATCHES_PER_MONTH = 20  # месяцы с меньшим числом сов
 
 # --------------------------------------------------------------------------- загрузка
 
-def find_csv(raw_dir: Path) -> Path | None:
-    """Самый большой CSV в папке — сам набор (рядом могут лежать служебные файлы)."""
-    csvs = sorted(raw_dir.glob("*.csv"), key=lambda p: p.stat().st_size, reverse=True)
-    return csvs[0] if csvs else None
+DATA_SUFFIXES = (".csv", ".xlsx")
 
 
-def download(raw_dir: str | Path, version: int, timeout: int = 300) -> tuple[Path, str]:
-    """Возвращает путь к CSV набора и откуда он взят.
+def data_files(raw_dir: Path) -> list[Path]:
+    """Таблицы набора в папке: CSV или Excel, без служебных файлов macOS."""
+    return sorted(p for p in raw_dir.iterdir()
+                  if p.suffix.lower() in DATA_SUFFIXES and not p.name.startswith("._"))
 
-    Если CSV уже лежит в папке (скачан раньше или положен вручную), сеть не нужна.
-    Из архива извлекаются только CSV-файлы: архив чужой, распаковывать всё подряд нельзя.
+
+def _extract_tables(archive: zipfile.ZipFile, raw_dir: Path, depth: int = 0) -> list[Path]:
+    """Достаёт из архива только таблицы. Архив чужой, поэтому распаковывать всё подряд нельзя:
+    берутся файлы .csv и .xlsx, по имени без папок; вложенный архив раскрывается на один уровень."""
+    extracted = []
+    for member in archive.namelist():
+        name = Path(member).name
+        if not name or member.startswith("__MACOSX") or name.startswith("._"):
+            continue
+        if name.lower().endswith(DATA_SUFFIXES):
+            target = raw_dir / name
+            if not target.exists():
+                target.write_bytes(archive.read(member))
+                extracted.append(target)
+        elif name.lower().endswith(".zip") and depth == 0:
+            with zipfile.ZipFile(io.BytesIO(archive.read(member))) as inner:
+                extracted += _extract_tables(inner, raw_dir, depth=1)
+    return extracted
+
+
+def extract_archives(raw_dir: Path) -> list[Path]:
+    """Распаковывает архивы, положенные в папку вручную (например, «Download All» с Mendeley)."""
+    extracted = []
+    for zip_path in sorted(raw_dir.glob("*.zip")):
+        with zipfile.ZipFile(zip_path) as archive:
+            extracted += _extract_tables(archive, raw_dir)
+    return extracted
+
+
+def manual_download_hint(raw_dir: Path, version: int) -> str:
+    return (
+        "Скачайте набор вручную: откройте в браузере "
+        f"https://data.mendeley.com/datasets/{DATASET_ID}/{version}, нажмите «Download All» "
+        f"и положите скачанный архив (распаковывать не нужно) в папку Google Диска {raw_dir}"
+    )
+
+
+def obtain(raw_dir: str | Path, version: int, timeout: int = 300) -> tuple[list[Path], str]:
+    """Находит таблицы набора в папке, при необходимости распаковав или скачав их.
+
+    Порядок: таблицы уже лежат в папке → архив, положенный вручную → скачивание с Mendeley.
+    Mendeley с осени 2026 года отвечает отказом (403) на автоматическое скачивание,
+    поэтому основной путь — архив, скачанный в браузере.
     """
     raw_dir = Path(raw_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
-    existing = find_csv(raw_dir)
-    if existing is not None:
-        return existing, "уже в папке"
+    extracted = extract_archives(raw_dir)
+    files = data_files(raw_dir)
+    if files:
+        return files, ("распакованы из архива в папке" if extracted else "уже в папке")
 
     url = ZIP_URL.format(dataset_id=DATASET_ID, version=version)
-    response = requests.get(url, timeout=timeout)
+    try:
+        response = requests.get(url, timeout=timeout)
+    except requests.RequestException as error:
+        raise SystemExit(f"Не удалось связаться с Mendeley ({error}). {manual_download_hint(raw_dir, version)}")
     if response.status_code != 200:
-        raise RuntimeError(
-            f"Mendeley ответил кодом {response.status_code} на {url}. "
-            f"Скачайте набор вручную со страницы https://data.mendeley.com/datasets/{DATASET_ID}/{version} "
-            f"и положите CSV в папку {raw_dir}"
-        )
-    zip_path = raw_dir / f"cryptovision_v{version}.zip"
-    zip_path.write_bytes(response.content)
+        raise SystemExit(f"Mendeley ответил кодом {response.status_code}. {manual_download_hint(raw_dir, version)}")
+    (raw_dir / f"cryptovision_v{version}.zip").write_bytes(response.content)
+    extract_archives(raw_dir)
+    files = data_files(raw_dir)
+    if not files:
+        raise SystemExit(f"В архиве с Mendeley нет таблиц .csv или .xlsx. {manual_download_hint(raw_dir, version)}")
+    return files, f"скачаны с {url}"
 
-    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
-        for member in archive.namelist():
-            if member.lower().endswith(".csv") and not member.startswith("__MACOSX"):
-                target = raw_dir / Path(member).name
-                target.write_bytes(archive.read(member))
-    found = find_csv(raw_dir)
-    if found is None:
-        raise RuntimeError(f"В архиве {zip_path} нет CSV-файлов")
-    return found, f"скачан с {url}"
+
+def load_raw(files: list[Path]) -> tuple[pd.DataFrame, list[dict]]:
+    """Читает все таблицы набора с нужными колонками и объединяет их.
+
+    Возвращает таблицу с каноническими колонками и сведения о каждом файле:
+    сколько строк и использован ли он (файлы без нужных колонок, например описание
+    полей, пропускаются).
+    """
+    frames, info = [], []
+    for path in files:
+        raw = (pd.read_csv(path, low_memory=False) if path.suffix.lower() == ".csv"
+               else pd.read_excel(path))
+        try:
+            frame, mapping = normalize_columns(raw)
+        except KeyError:
+            info.append({"file": path.name, "rows": len(raw), "used": False})
+            continue
+        frames.append(frame)
+        info.append({"file": path.name, "rows": len(raw), "used": True, "columns": mapping})
+    if not frames:
+        names = ", ".join(i["file"] for i in info)
+        raise SystemExit(f"Ни в одном файле ({names}) нет колонок с адресом, заголовком и временем")
+    return pd.concat(frames, ignore_index=True), info
 
 
 # --------------------------------------------------------------------------- чтение

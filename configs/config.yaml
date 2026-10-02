@@ -27,7 +27,8 @@ data:
   news_en:
     dataset: CryptoVision
     doi: "10.17632/3c3xtxtfb6"
-    version: 2                      # ⚑ проверить поля файла в задаче 3.3
+    version: 2                      # версия от 07.11.2025, 14 колонок (URL, Title, Date_Time, Coin_Type, …)
+    declared_records: 188430        # число записей по описанию авторов — для проверки, та ли версия скачана
     keep_columns: [url, title, date_time, coin_type]   # имена приводятся к единому виду кодом
     source_timezone: null           # null — определить сверкой цен с Binance (задача 3.4); число — сдвиг от UTC в минутах
   news_ru:
