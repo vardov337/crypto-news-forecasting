@@ -17,7 +17,7 @@ from typing import Any
 import numpy as np
 
 KEY_PACKAGES = ("numpy", "pandas", "pyarrow", "pyyaml", "requests", "beautifulsoup4", "python-binance",
-                "scikit-learn", "xgboost", "statsmodels", "arch", "torch", "transformers", "matplotlib")
+                "scikit-learn", "xgboost", "statsmodels", "arch", "torch", "transformers", "openpyxl", "matplotlib")
 
 
 def set_seed(seed: int, deterministic_torch: bool = True) -> None:

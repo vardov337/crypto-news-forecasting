@@ -12,8 +12,13 @@ paths:
 time:
   timezone: UTC
   frequency: 1h
-  sample_start: null      # правило: первая дата, с которой доступны все источники (решения 1.5 и 3.3)
-  sample_end: null        # правило: последняя дата покрытия CryptoVision (задача 3.3)
+  # Границы выборки вычисляет код по правилам PROTOCOL.md (раздел 2) и пишет в
+  # results/metrics/sample_period.json; null — «по правилу», дата — принудительно.
+  sample_start: null      # первые полные сутки UTC, когда доступны все источники
+  sample_end: null        # самая ранняя из границ: час после последней свечи; начало месяца, в котором обрывается основной источник новостей
+  coverage:
+    min_source_share: 0.05  # основной источник — не меньше 5% новостей набора за последние recent_months месяцев
+    recent_months: 12
 
 data:
   prices:
@@ -45,18 +50,31 @@ data:
     keep: earliest
 
 sentiment:
-  score: p_pos_minus_p_neg
-  en:
-    model: null        # задача 5.5: burakutf/finetuned-finbert-crypto или ProsusAI/finbert
-    revision: null     # хеш коммита на Hugging Face
-  ru:
-    model: blanchefort/rubert-base-cased-sentiment
-    revision: null
+  score: p_pos_minus_p_neg      # s = P(позитив) − P(негатив); класс — с максимальной вероятностью
+  text: title                   # модели видят только заголовок
+  # Кандидаты для каждого языка. В признаки идёт тот, у кого наибольший macro-F1
+  # на ручной разметке первого разметчика (шаг 5b); при равенстве — первый по списку.
+  # revision — хеш коммита на Hugging Face. null: при первом запуске шага 5 берётся
+  # текущая ревизия, записывается в results/metrics/sentiment_models.json и затем
+  # фиксируется здесь.
+  candidates:
+    en:
+      - {model: ProsusAI/finbert, revision: null}                         # финансовые новости (Financial PhraseBank)
+      - {model: burakutf/finetuned-finbert-crypto, revision: null}        # FinBERT, дообученный на криптотекстах
+      - {model: ElKulako/cryptobert, revision: null}                      # криптовалютные соцсети (StockTwits); Bearish/Bullish
+    ru:
+      - {model: blanchefort/rubert-base-cased-sentiment, revision: null}  # соцсети и отзывы
+      - {model: seara/rubert-base-cased-russian-sentiment, revision: null}  # в обучении есть новости
+      - {model: mxlcw/rubert-tiny2-russian-financial-sentiment, revision: null}  # финансовые посты Telegram
+  selection:
+    metric: macro_f1
+    bootstrap_reps: 2000
   batch_size: 64
   max_length: 128
   annotation:
     sample_size_per_language: 400
     second_annotator_sample: 100
+    seed: 2026
 
 features:
   price:

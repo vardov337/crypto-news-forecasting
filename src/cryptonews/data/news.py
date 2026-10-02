@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import html
 import re
 import unicodedata
 from urllib.parse import urlparse
@@ -15,6 +16,19 @@ import pandas as pd
 from cryptonews.data import coins
 
 OUTPUT_COLUMNS = ["published_utc", "title", "url", "source", "mentions_btc", "mentions_eth"]
+
+
+ENTITY = re.compile(r"&(?:#\d+|#x[0-9a-fA-F]+|[a-zA-Z]{2,8});")
+
+
+def unescape_title(title) -> str:
+    """Заголовок без мнемоник HTML (&amp;, &#8217; …) и лишних пробелов.
+
+    Модель тональности должна видеть тот же текст, что и читатель: «S&amp;P 500»
+    вместо «S&P 500» — шум для токенизатора. Повтор операции ничего не меняет
+    для заголовков, где мнемоник нет.
+    """
+    return re.sub(r"\s+", " ", html.unescape(str(title))).strip()
 
 
 def normalize_title(title: str) -> str:
@@ -120,7 +134,8 @@ def clean_utc(frame: pd.DataFrame, dedup_window_hours: int = 24,
     work = frame[frame["published_utc"].notna()].copy()
     stages.append(("С корректной меткой времени", len(work)))
 
-    work["title"] = work["title"].astype("string").str.strip()
+    titles = work["title"].astype("string")
+    work["title"] = titles.where(titles.isna(), titles.fillna("").map(unescape_title)).astype("string")
     work["url"] = work["url"].astype("string").str.strip()
     work = work[(work["title"].fillna("").str.len() > 0) & (work["url"].fillna("").str.len() > 0)]
     stages.append(("С заголовком и адресом", len(work)))
@@ -144,15 +159,52 @@ def clean_utc(frame: pd.DataFrame, dedup_window_hours: int = 24,
     return result, table
 
 
+def month_label(times: pd.Series) -> pd.Series:
+    """Календарный месяц метки UTC в виде «2025-07»."""
+    return times.dt.tz_convert("UTC").dt.tz_localize(None).dt.to_period("M").astype(str)
+
+
+def sources_span(news: pd.DataFrame, recent_months: int = 12) -> pd.DataFrame:
+    """Когда у каждого источника первая и последняя новость.
+
+    Нужна для выбора границ выборки: если источник обрывается раньше других,
+    последний месяц набора собран не полностью. Доля за последние recent_months
+    месяцев показывает, какие источники активны в конце набора.
+    """
+    last = news["published_utc"].max()
+    recent = news["published_utc"] > last - pd.DateOffset(months=recent_months)
+    rows = []
+    for source, group in news.groupby("source"):
+        rows.append({
+            "Источник": source, "Новостей": len(group),
+            "Первая": group["published_utc"].min(), "Последняя": group["published_utc"].max(),
+            f"За последние {recent_months} мес.": int(recent.loc[group.index].sum()),
+        })
+    table = pd.DataFrame(rows).sort_values("Новостей", ascending=False).set_index("Источник")
+    recent_col = f"За последние {recent_months} мес."
+    table[f"Доля за последние {recent_months} мес."] = (
+        table[recent_col] / max(int(recent.sum()), 1)).round(4)
+    return table
+
+
+def by_source_month(news: pd.DataFrame) -> pd.DataFrame:
+    """Число новостей каждого источника по месяцам — видно, когда источник
+    появляется в наборе и когда обрывается."""
+    table = pd.crosstab(month_label(news["published_utc"]), news["source"])
+    table.index.name = "Месяц"
+    table.columns.name = None
+    return table
+
+
 def summary_tables(news: pd.DataFrame) -> dict[str, pd.DataFrame]:
     """Разбивки для раздела о данных: по годам, по месяцам, по источникам, по монетам,
-    а также точность времени публикации по источникам."""
+    точность времени публикации и период покрытия по источникам."""
     by_year = news.groupby(news["published_utc"].dt.year).size().rename("Новостей").to_frame()
     by_year.index.name = "Год"
-    month = news["published_utc"].dt.tz_localize(None).dt.to_period("M").astype(str)
-    by_month = news.groupby(month).size().rename("Новостей").to_frame()
+    by_month = news.groupby(month_label(news["published_utc"])).size().rename("Новостей").to_frame()
     by_month.index.name = "Месяц"
     by_source = news["source"].value_counts().rename("Новостей").to_frame()
     by_source.index.name = "Источник"
     return {"by_year": by_year, "by_month": by_month, "by_source": by_source,
-            "by_coin": coins.coverage_table(news), "time_precision": time_precision(news)}
+            "by_coin": coins.coverage_table(news), "time_precision": time_precision(news),
+            "sources_span": sources_span(news), "by_source_month": by_source_month(news)}

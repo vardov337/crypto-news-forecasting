@@ -19,6 +19,7 @@
 """
 import pandas as pd
 
+from cryptonews import period
 from cryptonews.cli import parse_args
 from cryptonews.config import load_config
 from cryptonews.data import binance, cryptovision as cv
@@ -120,6 +121,8 @@ def main() -> None:
                          f"{tz.best_offset_minutes} мин. Разберитесь, прежде чем продолжать.")
 
     # 3. Очистка
+    entities = int(frame["title"].astype("string").str.contains(news_rules.ENTITY, na=False).sum())
+    log.info("Заголовков с мнемониками HTML (&amp;, &#8217; и т. п.): %d — раскрываются при очистке", entities)
     news, stages = cv.clean(frame, offset_minutes=tz.best_offset_minutes,
                             dedup_window_hours=int(cfg["data"]["dedup"]["window_hours"]))
     out_path = data_dir / "interim" / "news_en.parquet"
@@ -135,7 +138,12 @@ def main() -> None:
     log.info("Этапы очистки:\n%s", stages.to_string(index=False))
     log.info("По источникам:\n%s", summaries["by_source"].head(10).to_string())
     log.info("По годам:\n%s", summaries["by_year"].to_string())
-    log.info("Последние месяцы (для выбора конца выборки):\n%s", summaries["by_month"].tail(8).to_string())
+    log.info("Период по источникам:\n%s", summaries["sources_span"].to_string())
+    log.info("Новостей по источникам за последние месяцы:\n%s",
+             summaries["by_source_month"].tail(8).to_string())
+    end, _ = period.coverage_end(news, **period.coverage_params(cfg))
+    log.info("Граница полного покрытия набора — начало месяца, в котором обрывается основной "
+             "источник: %s. Новости с этой даты в выборку не войдут.", f"{end:%d.%m.%Y}")
     log.info("Привязка к монетам по заголовку:\n%s", summaries["by_coin"].to_string(index=False))
     if "coin_type" in news:
         agree = news.assign(label=news["coin_type"].astype("string").str.lower())
