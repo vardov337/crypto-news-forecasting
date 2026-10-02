@@ -199,15 +199,20 @@ def parse_times(values: pd.Series) -> tuple[pd.Series, float]:
 @dataclass
 class TimezoneReport:
     sample_months: list[str] = field(default_factory=list)
+    records_imprecise: int = 0      # исключены из сверки: время без часа и минут
     records_checked: int = 0
     records_matched: int = 0
     best_offset_minutes: int | None = None
-    best_rule: str | None = None
-    best_share: float = 0.0
-    runner_up_share: float = 0.0
+    best_share: float = 0.0          # доля совпадений в пределах одной свечи от метки
+    runner_up_share: float = 0.0     # то же для следующего по силе сдвига
+    best_rule: str | None = None     # как набор выбирал свечу — для описания, на вывод не влияет
+    rule_shares: dict = field(default_factory=dict)
+    outside_before: float = 0.0      # свеча раньше метки больше чем на 15 минут
+    outside_after: float = 0.0       # свеча позже метки больше чем на 15 минут
     candidates: list[dict] = field(default_factory=list)
     top_deltas: list[dict] = field(default_factory=list)
     per_month: list[dict] = field(default_factory=list)
+    per_source: list[dict] = field(default_factory=list)
     months_agreeing: float = 0.0
     verdict: str = ""
 
@@ -249,39 +254,56 @@ def match_candles(news: pd.DataFrame, candles: pd.DataFrame) -> pd.DataFrame:
 
     left = keyed(news.dropna(subset=["open", "high", "low", "close"]))
     left = left.reset_index(drop=True).reset_index(names="row")
+    if "url" not in left:
+        left["url"] = ""
     right = keyed(candles.reset_index(names="candle_time"))
     right["candle_time"] = right["candle_time"].dt.tz_localize(None)
     keys = ["k_open", "k_high", "k_low", "k_close"]
-    merged = left[["row", "date_time"] + keys].merge(right[["candle_time"] + keys], on=keys)
+    merged = left[["row", "date_time", "url"] + keys].merge(right[["candle_time"] + keys], on=keys)
     merged["delta_min"] = (merged["candle_time"] - merged["date_time"]).dt.total_seconds() / 60
     merged = merged[merged["delta_min"].abs() <= MATCH_WINDOW_HOURS * 60]
     unique = merged[merged.groupby("row")["row"].transform("size") == 1]
-    return unique[["row", "date_time", "candle_time", "delta_min"]]
+    return unique[["row", "date_time", "url", "candle_time", "delta_min"]]
 
 
-def score_offsets(delta_min: pd.Series) -> pd.DataFrame:
-    """Доля совпадений, которую объясняет каждая пара «сдвиг пояса, правило выбора свечи».
+def window_scores(delta_min: pd.Series) -> pd.DataFrame:
+    """Для каждого сдвига X — доля совпадений, где свеча лежит в пределах одной свечи
+    (±15 минут) от метки, переведённой в UTC: |d + X| < 15.
 
-    Если метка записана в поясе UTC+X, то время свечи минус метка равно d, а время
-    свечи минус настоящее время UTC равно d + X. Набор мог брать свечу, в которую
-    попадает новость (−15 < d + X ≤ 0), или следующую за ней (0 ≤ d + X < 15).
+    Это и есть проверка пояса. Правило, по которому набор выбирал свечу (та, в которую
+    попадает новость, следующая или ближайшая), на ответ не влияет: при любом из них
+    свеча оказывается в пределах 15 минут. Окна разных сдвигов не пересекаются,
+    потому что кандидаты отличаются минимум на 30 минут.
     """
     d = delta_min.to_numpy()
-    rows = []
-    for offset in OFFSET_CANDIDATES:
-        shifted = d + offset
-        rows.append({"offset_minutes": offset, "rule": "свеча, содержащая новость",
-                     "share": float(((shifted > -CANDLE_MINUTES) & (shifted <= 0)).mean())})
-        rows.append({"offset_minutes": offset, "rule": "следующая свеча",
-                     "share": float(((shifted >= 0) & (shifted < CANDLE_MINUTES)).mean())})
+    rows = [{"offset_minutes": x, "share": float((np.abs(d + x) < CANDLE_MINUTES).mean())}
+            for x in OFFSET_CANDIDATES]
     return pd.DataFrame(rows).sort_values("share", ascending=False).reset_index(drop=True)
+
+
+def rule_shares(delta_min: pd.Series, offset: int) -> dict[str, float]:
+    """Какое правило выбора свечи объясняет совпадения при найденном сдвиге — для описания набора."""
+    shifted = delta_min.to_numpy() + offset
+    half = CANDLE_MINUTES / 2
+    return {
+        "свеча, содержащая новость": float(((shifted > -CANDLE_MINUTES) & (shifted <= 0)).mean()),
+        "следующая свеча": float(((shifted >= 0) & (shifted < CANDLE_MINUTES)).mean()),
+        "ближайшая свеча": float(((shifted >= -half) & (shifted <= half)).mean()),
+    }
 
 
 def detect_timezone(news: pd.DataFrame, candles_by_symbol: dict[str, pd.DataFrame],
                     sample_months: list[str], min_share: float = 0.9,
-                    min_month_agreement: float = 0.9) -> TimezoneReport:
+                    min_month_agreement: float = 0.9, min_source_share: float = 0.8,
+                    min_matches: int = MIN_MATCHES_PER_MONTH) -> TimezoneReport:
     report = TimezoneReport(sample_months=sample_months)
-    dated = news[news["date_time"].notna()]
+    dated = news[news["date_time"].notna()].copy()
+    # записи без точного времени (одна дата) в сверке не участвуют: их всё равно
+    # исключит очистка, а здесь они только мешали бы
+    dated["source"] = dated["url"].map(news_rules.source_of)
+    imprecise = news_rules.imprecise_mask(dated, column="date_time")
+    report.records_imprecise = int(imprecise.sum())
+    dated = dated[~imprecise]
     month = dated["date_time"].dt.to_period("M").astype(str)
     day = dated["date_time"].dt.day
     # края месяца пропускаем: со сдвигом пояса новость могла уйти в соседний месяц,
@@ -296,46 +318,64 @@ def detect_timezone(news: pd.DataFrame, candles_by_symbol: dict[str, pd.DataFram
         return report
     report.records_matched = len(matched)
 
-    # Самые частые разности «время свечи минус метка»: если вывод не получится,
-    # по ним видно, как на самом деле набор выбирал свечу
     counts = matched["delta_min"].round().value_counts().head(10)
     report.top_deltas = [{"delta_min": int(k), "count": int(v)} for k, v in counts.items()]
 
-    scores = score_offsets(matched["delta_min"])
-    report.candidates = scores.head(6).to_dict("records")
-    best = scores.iloc[0]
-    report.best_offset_minutes = int(best["offset_minutes"])
-    report.best_rule = str(best["rule"])
-    report.best_share = float(best["share"])
+    scores = window_scores(matched["delta_min"])
+    report.candidates = scores.head(5).to_dict("records")
+    report.best_offset_minutes = int(scores.iloc[0]["offset_minutes"])
+    report.best_share = float(scores.iloc[0]["share"])
     report.runner_up_share = float(scores.iloc[1]["share"])
+    report.rule_shares = rule_shares(matched["delta_min"], report.best_offset_minutes)
+    report.best_rule = max(report.rule_shares, key=report.rule_shares.get)
+    shifted = matched["delta_min"] + report.best_offset_minutes
+    report.outside_before = float((shifted <= -CANDLE_MINUTES).mean())
+    report.outside_after = float((shifted >= CANDLE_MINUTES).mean())
 
-    matched = matched.assign(month=matched["date_time"].dt.to_period("M").astype(str))
+    def best_for(group: pd.DataFrame) -> tuple[int, float, float]:
+        top = window_scores(group["delta_min"]).iloc[0]
+        at_global = float((np.abs(group["delta_min"] + report.best_offset_minutes) < CANDLE_MINUTES).mean())
+        return int(top["offset_minutes"]), float(top["share"]), at_global
+
     agree = []
+    matched = matched.assign(month=matched["date_time"].dt.to_period("M").astype(str))
     for month_name, group in matched.groupby("month"):
-        if len(group) < MIN_MATCHES_PER_MONTH:
+        if len(group) < min_matches:
             continue
-        top = score_offsets(group["delta_min"]).iloc[0]
-        same = int(top["offset_minutes"]) == report.best_offset_minutes
-        agree.append(same)
-        report.per_month.append({"month": month_name, "matched": len(group),
-                                 "best_offset_minutes": int(top["offset_minutes"]),
-                                 "share": round(float(top["share"]), 3), "agrees": same})
+        offset, share, _ = best_for(group)
+        agree.append(offset == report.best_offset_minutes)
+        report.per_month.append({"month": month_name, "matched": len(group), "best_offset_minutes": offset,
+                                 "share": round(share, 3), "agrees": agree[-1]})
     report.months_agreeing = float(np.mean(agree)) if agree else 0.0
 
+    # По источникам: если какой-то сайт пишет время в своём поясе, это видно здесь
+    matched = matched.assign(source=matched["url"].map(news_rules.source_of))
+    for source, group in matched.groupby("source"):
+        if len(group) < 5 * min_matches:
+            continue
+        offset, share, at_global = best_for(group)
+        report.per_source.append({"source": source, "matched": len(group), "best_offset_minutes": offset,
+                                  "share": round(share, 3), "share_at_global": round(at_global, 3),
+                                  "agrees": offset == report.best_offset_minutes and at_global >= min_source_share})
+
     months_clear = bool(report.per_month) and all(m["share"] >= min_share for m in report.per_month)
+    bad_sources = [s["source"] for s in report.per_source if not s["agrees"]]
     if report.months_agreeing < min_month_agreement and months_clear:
         # внутри каждого месяца сдвиг однозначен, но между месяцами разный
         offsets = sorted({m["best_offset_minutes"] for m in report.per_month})
         report.verdict = (f"Сдвиг меняется от месяца к месяцу ({offsets} мин) — похоже на летнее "
                           "время; нужен пояс с переходами, а не постоянный сдвиг")
     elif report.best_share < min_share:
-        report.verdict = f"Ненадёжно: лучший вариант объясняет только {report.best_share:.1%} совпадений"
+        report.verdict = (f"Ненадёжно: в пределах одной свечи от метки только {report.best_share:.1%} "
+                          "совпадений")
     elif report.months_agreeing < min_month_agreement:
         report.verdict = f"Ненадёжно: с общим сдвигом согласны только {report.months_agreeing:.0%} месяцев"
+    elif bad_sources:
+        report.verdict = f"Ненадёжно: источники {bad_sources} расходятся с общим сдвигом"
     else:
-        report.verdict = (f"Надёжно: {report.offset_label}, {report.best_rule}; "
-                          f"объясняет {report.best_share:.1%} совпадений, "
-                          f"согласны {report.months_agreeing:.0%} месяцев")
+        report.verdict = (f"Надёжно: {report.offset_label}; в пределах одной свечи от метки "
+                          f"{report.best_share:.1%} совпадений, согласны {report.months_agreeing:.0%} месяцев "
+                          f"и все крупные источники; набор брал «{report.best_rule}»")
     return report
 
 
@@ -353,4 +393,4 @@ def clean(frame: pd.DataFrame, offset_minutes: int, dedup_window_hours: int = 24
     """
     work = frame.copy()
     work["published_utc"] = (work["date_time"] - pd.Timedelta(minutes=offset_minutes)).dt.tz_localize("UTC")
-    return news_rules.clean_utc(work, dedup_window_hours=dedup_window_hours)
+    return news_rules.clean_utc(work, dedup_window_hours=dedup_window_hours, precision_column="date_time")

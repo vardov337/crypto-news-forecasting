@@ -68,6 +68,10 @@ def main() -> None:
              frame["date_time"].min(), frame["date_time"].max())
     if "coin_type" in frame:
         log.info("Монеты в наборе:\n%s", frame["coin_type"].value_counts().head(15).to_string())
+    frame["source"] = frame["url"].map(news_rules.source_of)
+    precision = news_rules.time_precision(frame.dropna(subset=["date_time"]), column="date_time")
+    log.info("Точность времени публикации по источникам (как записано в файле):\n%s",
+             precision.to_string(index=False))
 
     # 2. Часовой пояс
     months = cv.pick_sample_months(frame)
@@ -78,17 +82,29 @@ def main() -> None:
                for symbol in ("BTCUSDT", "ETHUSDT")}
     tz = cv.detect_timezone(frame, candles, months)
 
+    log.info("Исключено из сверки как записи без точного времени: %d", tz.records_imprecise)
     log.info("Проверено новостей: %d, однозначных совпадений цен: %d",
              tz.records_checked, tz.records_matched)
-    log.info("Лучшие варианты (сдвиг от UTC в минутах, правило, доля совпадений):")
+    log.info("Сдвиги от UTC, при которых свеча лежит в пределах 15 минут от метки (доля совпадений):")
     for c in tz.candidates:
-        log.info("    %+5d  %-28s %.1f%%", c["offset_minutes"], c["rule"], 100 * c["share"])
+        log.info("    %+5d мин  %.1f%%", c["offset_minutes"], 100 * c["share"])
+    log.info("Вне окна: свеча раньше метки — %.1f%%, позже — %.1f%%",
+             100 * tz.outside_before, 100 * tz.outside_after)
+    log.info("Как набор выбирал свечу при найденном сдвиге: %s",
+             ", ".join(f"{k} — {100 * v:.1f}%" for k, v in tz.rule_shares.items()))
     log.info("Самые частые разности «время свечи минус метка», мин: %s",
              ", ".join(f"{d['delta_min']} ({d['count']})" for d in tz.top_deltas))
     log.info("По месяцам:")
     for m in tz.per_month:
-        log.info("    %s  совпадений %4d, лучший сдвиг %+5d, доля %.1f%%%s", m["month"], m["matched"],
+        log.info("    %s  совпадений %4d, лучший сдвиг %+5d, в окне %.1f%%%s", m["month"], m["matched"],
                  m["best_offset_minutes"], 100 * m["share"], "" if m["agrees"] else "  ← не совпадает")
+    log.info("По источникам:")
+    for m in tz.per_source:
+        log.info("    %-22s совпадений %5d, лучший сдвиг %+5d, в окне при общем сдвиге %.1f%%%s",
+                 m["source"], m["matched"], m["best_offset_minutes"], 100 * m["share_at_global"],
+                 "" if m["agrees"] else "  ← расходится")
+    if share_tz > 0.95 and tz.best_offset_minutes == 0:
+        log.info("Метки в файле явно помечены как UTC (+00:00), и сверка с ценами это подтверждает.")
     log.info("ВЫВОД: %s", tz.verdict)
 
     save_json({"manifest": run_manifest(cfg),
@@ -111,6 +127,7 @@ def main() -> None:
 
     tables_dir = results_dir / "tables"
     stages.to_csv(tables_dir / "cleaning_news_en.csv", index=False, encoding="utf-8")
+    precision.to_csv(tables_dir / "news_en_time_precision_raw.csv", index=False, encoding="utf-8")
     summaries = news_rules.summary_tables(news)
     for name, table in summaries.items():
         table.to_csv(tables_dir / f"news_en_{name}.csv", encoding="utf-8")
@@ -118,6 +135,7 @@ def main() -> None:
     log.info("Этапы очистки:\n%s", stages.to_string(index=False))
     log.info("По источникам:\n%s", summaries["by_source"].head(10).to_string())
     log.info("По годам:\n%s", summaries["by_year"].to_string())
+    log.info("Последние месяцы (для выбора конца выборки):\n%s", summaries["by_month"].tail(8).to_string())
     log.info("Привязка к монетам по заголовку:\n%s", summaries["by_coin"].to_string(index=False))
     if "coin_type" in news:
         agree = news.assign(label=news["coin_type"].astype("string").str.lower())
