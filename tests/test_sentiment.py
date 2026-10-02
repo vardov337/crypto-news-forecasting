@@ -22,6 +22,18 @@ def test_canonical_labels_by_name_not_position():
         {0: "negative", 1: "neutral", 2: "positive"}
 
 
+def test_index_overrides_fix_mislabelled_config():
+    """burakutf/finetuned-finbert-crypto: в config.json Neutral/Positive/Negative, по README — 0/1/2 = neg/neu/pos."""
+    id2label = {0: "Neutral", 1: "Positive", 2: "Negative"}
+    assert sentiment.canonical_labels(id2label) == {0: "neutral", 1: "positive", 2: "negative"}
+    fixed = sentiment.canonical_labels(id2label, {0: "negative", 1: "neutral", "2": "Positive"})
+    assert fixed == {0: "negative", 1: "neutral", 2: "positive"}
+    assert sentiment.overrides_key({0: "negative"}) == sentiment.overrides_key({"0": "negative"})
+    assert sentiment.overrides_key(None) == "{}"
+    with pytest.raises(ValueError):
+        sentiment.canonical_labels(id2label, {0: "bad"})
+
+
 def test_canonical_labels_rejects_unknown_or_incomplete():
     with pytest.raises(ValueError, match="LABEL_0"):
         sentiment.canonical_labels({0: "LABEL_0", 1: "LABEL_1", 2: "LABEL_2"})

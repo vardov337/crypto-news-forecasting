@@ -18,6 +18,7 @@
 """
 import json
 import os
+import shutil
 import time
 import traceback
 import zipfile
@@ -64,8 +65,23 @@ def load_inputs(cfg: dict) -> tuple[dict, dict, dict]:
     return news, hashes, prices
 
 
+def labels_in(paths: list[Path]) -> int:
+    """Сколько меток уже стоит в файлах разметки; −1 — файл не читается (лучше его не трогать)."""
+    total = 0
+    for path in paths:
+        if path.exists():
+            try:
+                total += int(annotation.read_workbook(path)["label"].notna().sum())
+            except Exception:
+                return -1
+    return total
+
+
 def prepare_annotation(cfg: dict, news: dict, hashes: dict, span: period.SamplePeriod, log) -> Path:
-    """Файлы для разметчиков. Существующие файлы не трогаются: в них может быть разметка."""
+    """Файлы для разметчиков.
+
+    Готовые файлы пересоздаются, только если период выборки изменился и в файлах ещё
+    нет ни одной метки. Если разметка уже начата, файлы не трогаются никогда."""
     ann_cfg = cfg["sentiment"]["annotation"]
     size, second_size, seed = (int(ann_cfg["sample_size_per_language"]),
                                int(ann_cfg["second_annotator_sample"]), int(ann_cfg["seed"]))
@@ -73,24 +89,37 @@ def prepare_annotation(cfg: dict, news: dict, hashes: dict, span: period.SampleP
     out_dir.mkdir(parents=True, exist_ok=True)
     instruction = (PROJECT_ROOT / "annotation" / "instruction.md").read_text(encoding="utf-8")
     period_text = f"{span.start} … {span.end}"
+    dates = f"новости с {span.start:%d.%m.%Y} по {span.last_hour:%d.%m.%Y}"
     created = False
     for lang in ("en", "ru"):
         main_path = out_dir / f"annotation_{lang}_main.xlsx"
         second_path = out_dir / f"annotation_{lang}_second.xlsx"
         meta_path = out_dir / f"annotation_{lang}_meta.json"
         if main_path.exists() or second_path.exists():
-            log.info("Файлы разметки (%s) уже есть, не пересоздаю: %s", lang, main_path.name)
-            if meta_path.exists():
-                meta = json.loads(meta_path.read_text(encoding="utf-8"))
-                if meta.get("period") != period_text:
-                    log.warning("Выборка для разметки (%s) сделана для другого периода: %s", lang, meta.get("period"))
-            continue
+            meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+            if meta.get("period") == period_text:
+                log.info("Файлы разметки (%s) уже есть и соответствуют периоду, не пересоздаю", lang)
+                continue
+            filled = labels_in([main_path, second_path])
+            if filled != 0:
+                log.warning("Период выборки изменился (был %s), но в файлах разметки (%s) уже есть метки — "
+                            "файлы не трогаю. Сообщите об этом.", meta.get("period"), lang)
+                continue
+            archive_dir = out_dir / "old" / f"{lang}_{time.strftime('%Y%m%d_%H%M%S')}"
+            archive_dir.mkdir(parents=True, exist_ok=True)
+            for stale in out_dir.glob(f"annotation_{lang}_*"):
+                shutil.move(str(stale), str(archive_dir / stale.name))
+            log.info("Период выборки изменился (был %s), а разметки в файлах (%s) ещё нет — пересоздаю их; "
+                     "старые файлы перенесены в %s", meta.get("period"), lang, archive_dir)
         frame = news[lang][span.mask(news[lang]["published_utc"])]
         main, second = annotation.make_samples(frame, lang, size, second_size, seed)
         heading = f"Разметка тональности: {LANGUAGE_NAMES[lang]}"
-        annotation.write_workbook(main, main_path, instruction, f"{heading}, {len(main)} заголовков")
+        stamp = f"period={period_text}; seed={seed}; news_sha256={hashes[lang]}"
+        annotation.write_workbook(main, main_path, instruction,
+                                  f"{heading}, {len(main)} заголовков ({dates})", description=stamp)
         annotation.write_workbook(second, second_path, instruction,
-                                  f"{heading}, второй разметчик, {len(second)} заголовков")
+                                  f"{heading}, второй разметчик, {len(second)} заголовков ({dates})",
+                                  description=stamp)
         main.to_csv(out_dir / f"annotation_{lang}_main_key.csv", index=False, encoding="utf-8")
         second.to_csv(out_dir / f"annotation_{lang}_second_key.csv", index=False, encoding="utf-8")
         strata = annotation.strata_table(main, frame)
@@ -111,7 +140,9 @@ def prepare_annotation(cfg: dict, news: dict, hashes: dict, span: period.SampleP
             for path in sorted(out_dir.glob("annotation_*_*.xlsx")):
                 archive.write(path, arcname=path.name)
             archive.writestr("instruction.md", instruction)
-    log.info("Файлы для разметки: %s", zip_path)
+        log.info("Архив для разметки собран заново: %s", zip_path)
+    else:
+        log.info("Архив для разметки не менялся: %s", zip_path)
     return zip_path
 
 
@@ -133,17 +164,20 @@ def score_candidate(candidate, frame: pd.DataFrame, news_hash: str, device: str,
     out_dir = cfg["paths"]["data_dir"] / "interim" / "sentiment" / candidate.language
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path, meta_path = out_dir / f"{slug}.parquet", out_dir / f"{slug}.json"
+    labels_key = sentiment.overrides_key(candidate.labels)
     if out_path.exists() and meta_path.exists():
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        if meta.get("news_sha256") == news_hash and meta.get("max_length") == max_length:
+        if (meta.get("news_sha256") == news_hash and meta.get("max_length") == max_length
+                and meta.get("labels_key", sentiment.overrides_key(None)) == labels_key):
             log.info("%s: оценки уже посчитаны, беру готовые (%s)", candidate.name, out_path.name)
             return meta
 
     log.info("%s [%s], ревизия %s — загружаю модель", candidate.name, candidate.language, revision)
     started = time.time()
     model = sentiment.HFClassifier(candidate.name, revision, device, max_length, candidate.labels)
-    log.info("    классы модели: %s", ", ".join(f"{model.id2label[i]} → {model.mapping[i]}"
-                                             for i in sorted(model.id2label)))
+    log.info("    классы модели: %s%s", ", ".join(f"{i}: {model.id2label[i]} → {model.mapping[i]}"
+                                               for i in sorted(model.id2label)),
+             " (соответствие задано в конфигурации)" if candidate.labels else "")
     correct, total, rows = sentiment.sanity_check(candidate.language, model.classify)
     log.info("    проверочные фразы: верно %d из %d", correct, total)
     for row in rows:
@@ -165,7 +199,8 @@ def score_candidate(candidate, frame: pd.DataFrame, news_hash: str, device: str,
         "file": out_path.name, "news_sha256": news_hash, "records": len(scores),
         "max_length": max_length, "batch_size": batch_size, "device": sentiment.device_name(device),
         "parameters": model.n_params, "id2label": model.id2label,
-        "mapping": {model.id2label[i]: c for i, c in model.mapping.items()},
+        "mapping": {f"{i}: {model.id2label[i]}": c for i, c in model.mapping.items()},
+        "labels_key": labels_key,
         "truncated": truncated, "token_length_median": float(pd.Series(lengths).median()),
         "label_shares": sentiment.label_shares(scores), "mean_score": float(scores["score"].mean()),
         "sanity_correct": correct, "sanity_total": total, "seconds": round(time.time() - started, 1),
@@ -197,6 +232,8 @@ def main() -> None:
         log.info("    первая запись — %-22s %s", name + ":", ts)
     for name, ts in span.ends.items():
         log.info("    граница конца — %-22s %s", name + ":", ts)
+    for name, table in span.coverage.items():
+        log.info("Регулярность сбора основных источников (%s):\n%s", name, period.coverage_report(table))
     save_json({"manifest": run_manifest(cfg), **span.as_dict()}, results_dir / "metrics" / "sample_period.json")
     for lang in ("en", "ru"):
         inside = int(span.mask(news[lang]["published_utc"]).sum())

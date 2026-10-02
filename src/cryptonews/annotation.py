@@ -131,7 +131,8 @@ def excel_safe(text) -> str:
     return ILLEGAL_CHARACTERS_RE.sub("", str(text))
 
 
-def write_workbook(sample: pd.DataFrame, path: Path, instruction: str, heading: str) -> None:
+def write_workbook(sample: pd.DataFrame, path: Path, instruction: str, heading: str,
+                   description: str | None = None) -> None:
     """Файл Excel для разметчика: лист с инструкцией, лист разметки и скрытый лист ключей."""
     from openpyxl import Workbook
     from openpyxl.formatting.rule import CellIsRule
@@ -194,6 +195,8 @@ def write_workbook(sample: pd.DataFrame, path: Path, instruction: str, heading: 
     for row in sample[KEY_COLUMNS].itertuples(index=False):
         key.append([None if pd.isna(v) else (int(v) if isinstance(v, np.integer) else v) for v in row])
     key.sheet_state = "hidden"
+    if description:
+        book.properties.description = description      # период и зерно — чтобы опознать версию файла
     book.active = 0
     path.parent.mkdir(parents=True, exist_ok=True)
     book.save(path)

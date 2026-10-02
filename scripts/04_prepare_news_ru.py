@@ -51,8 +51,9 @@ def main() -> None:
 
     log.info("Этапы очистки:\n%s", stages.to_string(index=False))
     log.info("По годам:\n%s", summaries["by_year"].to_string())
-    end, _ = period.coverage_end(news, **period.coverage_params(cfg))
-    log.info("Граница полного покрытия снимка (начало месяца последней записи): %s", f"{end:%d.%m.%Y}")
+    end, coverage = period.coverage_end(news, **period.coverage_params(cfg))
+    log.info("Регулярность сбора:\n%s", period.coverage_report(coverage))
+    log.info("Граница полного покрытия снимка: %s", f"{end:%d.%m.%Y}")
     log.info("Привязка к монетам по заголовку:\n%s", summaries["by_coin"].to_string(index=False))
     examples = news[news["mentions_eth"]].sample(min(5, int(news["mentions_eth"].sum())), random_state=0)
     log.info("Примеры заголовков с эфиром (для проверки правила):\n%s",

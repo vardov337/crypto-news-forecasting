@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import gc
+import json
 from dataclasses import dataclass
 from typing import Callable, Sequence
 
@@ -66,18 +67,30 @@ def candidates_from_config(cfg: dict) -> list[Candidate]:
     return result
 
 
+def overrides_key(labels: dict | None) -> str:
+    """Соответствие классов из конфигурации в виде строки — для проверки готовых оценок."""
+    return json.dumps({str(k): str(v) for k, v in (labels or {}).items()}, sort_keys=True)
+
+
 def model_slug(name: str, revision: str) -> str:
     """Имя файла с оценками модели: автор__модель@первые-8-знаков-ревизии."""
     return f"{name.replace('/', '__')}@{revision[:8]}"
 
 
 def canonical_labels(id2label: dict, overrides: dict | None = None) -> dict[int, str]:
-    """Номер класса модели → negative / neutral / positive."""
-    overrides = {str(k).strip().lower(): v for k, v in (overrides or {}).items()}
+    """Номер класса модели → negative / neutral / positive.
+
+    overrides — явное соответствие из конфигурации: по номеру класса ({0: negative, …})
+    или по его названию ({LABEL_0: negative, …}). Номер нужен, когда названия классов
+    в настройках модели перепутаны."""
+    by_index, by_name = {}, {}
+    for key, value in (overrides or {}).items():
+        target = by_index if isinstance(key, int) or str(key).strip().isdigit() else by_name
+        target[int(key) if target is by_index else str(key).strip().lower()] = str(value).strip().lower()
     mapping: dict[int, str] = {}
     for index, name in id2label.items():
         key = str(name).strip().lower()
-        canon = overrides.get(key) or SYNONYMS.get(key)
+        canon = by_index.get(int(index)) or by_name.get(key) or SYNONYMS.get(key)
         if canon not in CLASSES:
             raise ValueError(f"Класс «{name}» не удаётся сопоставить с negative/neutral/positive; "
                              "укажите соответствие в конфигурации (поле labels у модели)")

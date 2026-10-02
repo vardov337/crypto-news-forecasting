@@ -41,6 +41,38 @@ def test_coverage_end_is_month_where_a_major_source_stops():
     assert set(major.index) == {"a.com", "b.com"}
 
 
+def collapsing_source(source: str, normal_until: str, tail: list[str], per_day: int = 25) -> pd.DataFrame:
+    """Источник с регулярным сбором до normal_until и единичными записями после."""
+    normal = pd.date_range("2024-01-01", normal_until, freq=pd.Timedelta(hours=24 / per_day), tz="UTC")
+    times = normal.append(pd.DatetimeIndex(pd.to_datetime(tail, utc=True)))
+    return pd.DataFrame({"published_utc": times, "source": source, "title": "t",
+                         "url": [f"https://{source}/{i}" for i in range(len(times))]})
+
+
+def test_collapse_with_stray_records_is_detected():
+    """Как Cointelegraph в CryptoVision: сбор оборвался, но остались единичные записи."""
+    tail = ["2025-07-02 10:00", "2025-07-09 11:00", "2025-07-15 12:00", "2025-07-20 13:00",
+            "2025-07-24 14:00", "2025-07-28 15:00", "2025-07-30 16:00", "2025-08-08 09:00", "2025-08-14 14:09"]
+    healthy = collapsing_source("a.com", "2025-08-27 17:47", [])
+    for cut, expected in (("2025-06-23 12:00", "2025-06-01"), ("2025-07-01 18:00", "2025-07-01")):
+        news = pd.concat([healthy, collapsing_source("b.com", cut, tail)], ignore_index=True)
+        end, table = period.coverage_end(news)
+        assert end == pd.Timestamp(expected, tz="UTC"), (cut, end)
+        regular_until = table.loc["b.com", "Регулярный сбор до (не включая)"]
+        assert abs((regular_until - pd.Timestamp(cut, tz="UTC").normalize()).days) <= 2
+        assert table.loc["a.com", "Граница полного покрытия"] == pd.Timestamp("2025-08-01", tz="UTC")
+        assert "Регулярный сбор до" in period.coverage_report(table)
+
+
+def test_last_month_is_kept_only_when_complete():
+    news = collapsing_source("a.com", "2025-08-31 22:00", [])
+    assert period.coverage_end(news)[0] == pd.Timestamp("2025-09-01", tz="UTC")   # август собран целиком
+    news = collapsing_source("a.com", "2025-09-01 03:00", [])
+    assert period.coverage_end(news)[0] == pd.Timestamp("2025-09-01", tz="UTC")   # три часа сентября не в счёт
+    news = collapsing_source("a.com", "2025-08-20 12:00", [])
+    assert period.coverage_end(news)[0] == pd.Timestamp("2025-08-01", tz="UTC")   # август неполный
+
+
 def test_coverage_end_ignores_source_that_ended_long_ago():
     news = make_news({
         "a.com": ("2018-01-01", "2025-08-27", 3000),

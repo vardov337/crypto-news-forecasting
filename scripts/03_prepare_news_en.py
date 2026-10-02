@@ -141,9 +141,10 @@ def main() -> None:
     log.info("Период по источникам:\n%s", summaries["sources_span"].to_string())
     log.info("Новостей по источникам за последние месяцы:\n%s",
              summaries["by_source_month"].tail(8).to_string())
-    end, _ = period.coverage_end(news, **period.coverage_params(cfg))
-    log.info("Граница полного покрытия набора — начало месяца, в котором обрывается основной "
-             "источник: %s. Новости с этой даты в выборку не войдут.", f"{end:%d.%m.%Y}")
+    end, coverage = period.coverage_end(news, **period.coverage_params(cfg))
+    log.info("Регулярность сбора основных источников:\n%s", period.coverage_report(coverage))
+    log.info("Граница полного покрытия набора — начало месяца, в котором прекращается регулярный сбор "
+             "основного источника: %s. Новости с этой даты в выборку не войдут.", f"{end:%d.%m.%Y}")
     log.info("Привязка к монетам по заголовку:\n%s", summaries["by_coin"].to_string(index=False))
     if "coin_type" in news:
         agree = news.assign(label=news["coin_type"].astype("string").str.lower())

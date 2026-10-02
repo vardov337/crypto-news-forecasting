@@ -15,10 +15,13 @@ time:
   # Границы выборки вычисляет код по правилам PROTOCOL.md (раздел 2) и пишет в
   # results/metrics/sample_period.json; null — «по правилу», дата — принудительно.
   sample_start: null      # первые полные сутки UTC, когда доступны все источники
-  sample_end: null        # самая ранняя из границ: час после последней свечи; начало месяца, в котором обрывается основной источник новостей
+  sample_end: null        # самая ранняя из границ: час после последней свечи; начало месяца, в котором прекращается регулярный сбор основного источника новостей
   coverage:
     min_source_share: 0.05  # основной источник — не меньше 5% новостей набора за последние recent_months месяцев
     recent_months: 12
+    window_days: 7          # темп сбора — среднее число новостей в день в окне 7 суток с центром в этом дне
+    min_ratio: 0.5          # сбор регулярный, пока темп не ниже половины обычного
+    reference_days: 365     # обычный темп — медиана за последний год набора
 
 data:
   prices:
@@ -54,18 +57,26 @@ sentiment:
   text: title                   # модели видят только заголовок
   # Кандидаты для каждого языка. В признаки идёт тот, у кого наибольший macro-F1
   # на ручной разметке первого разметчика (шаг 5b); при равенстве — первый по списку.
-  # revision — хеш коммита на Hugging Face. null: при первом запуске шага 5 берётся
-  # текущая ревизия, записывается в results/metrics/sentiment_models.json и затем
-  # фиксируется здесь.
+  # revision — хеш коммита на Hugging Face (зафиксированы 02.10.2026 по первому запуску шага 5).
+  # labels — соответствие классов, если названия в настройках модели ошибочны (по номеру класса).
   candidates:
     en:
-      - {model: ProsusAI/finbert, revision: null}                         # финансовые новости (Financial PhraseBank)
-      - {model: burakutf/finetuned-finbert-crypto, revision: null}        # FinBERT, дообученный на криптотекстах
-      - {model: ElKulako/cryptobert, revision: null}                      # криптовалютные соцсети (StockTwits); Bearish/Bullish
+      - model: ProsusAI/finbert                       # финансовые новости (Financial PhraseBank)
+        revision: 4556d13015211d73dccd3fdd39d39232506f3e43
+      - model: burakutf/finetuned-finbert-crypto      # FinBERT, дообученный на криптотекстах
+        revision: 24ca955d09a693342a25e6a22249346431cd778c
+        # в config.json модели классы названы Neutral/Positive/Negative, а в README автора
+        # label_map = {0: negative, 1: neutral, 2: positive}; README подтверждают проверочные фразы
+        labels: {0: negative, 1: neutral, 2: positive}
+      - model: ElKulako/cryptobert                    # криптовалютные соцсети (StockTwits); Bearish/Bullish
+        revision: 9e37c910fe87727cb842a9ac55c6388256fe0f15
     ru:
-      - {model: blanchefort/rubert-base-cased-sentiment, revision: null}  # соцсети и отзывы
-      - {model: seara/rubert-base-cased-russian-sentiment, revision: null}  # в обучении есть новости
-      - {model: mxlcw/rubert-tiny2-russian-financial-sentiment, revision: null}  # финансовые посты Telegram
+      - model: blanchefort/rubert-base-cased-sentiment          # соцсети и отзывы
+        revision: 2d4b5fc431489a87ca4e44b842d904058706e8d4
+      - model: seara/rubert-base-cased-russian-sentiment        # в обучении есть новости
+        revision: d09619927897994a405b7a087b2bb04c5921e3f7
+      - model: mxlcw/rubert-tiny2-russian-financial-sentiment   # финансовые посты Telegram
+        revision: a02913e44597582218db7821d52dc15c331bf427
   selection:
     metric: macro_f1
     bootstrap_reps: 2000
