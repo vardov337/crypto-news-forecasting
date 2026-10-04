@@ -115,11 +115,18 @@ def prepare_annotation(cfg: dict, news: dict, hashes: dict, span: period.SampleP
         main, second = annotation.make_samples(frame, lang, size, second_size, seed)
         heading = f"Разметка тональности: {LANGUAGE_NAMES[lang]}"
         stamp = f"period={period_text}; seed={seed}; news_sha256={hashes[lang]}"
-        annotation.write_workbook(main, main_path, instruction,
-                                  f"{heading}, {len(main)} заголовков ({dates})", description=stamp)
-        annotation.write_workbook(second, second_path, instruction,
+        # перевод-подсказка и словарь терминов — для англоязычных заголовков (PROTOCOL.md, раздел 5)
+        translations, glossary = annotation.load_translations(lang), annotation.load_glossary(lang)
+        main_book = annotation.add_translations(main, translations)
+        if translations is not None:
+            log.info("Перевод-подсказка (%s) есть для %d из %d заголовков", lang,
+                     int(main_book["translation"].notna().sum()), len(main_book))
+        annotation.write_workbook(main_book, main_path, instruction,
+                                  f"{heading}, {len(main)} заголовков ({dates})", description=stamp,
+                                  glossary=glossary)
+        annotation.write_workbook(annotation.add_translations(second, translations), second_path, instruction,
                                   f"{heading}, второй разметчик, {len(second)} заголовков ({dates})",
-                                  description=stamp)
+                                  description=stamp, glossary=glossary)
         main.to_csv(out_dir / f"annotation_{lang}_main_key.csv", index=False, encoding="utf-8")
         second.to_csv(out_dir / f"annotation_{lang}_second_key.csv", index=False, encoding="utf-8")
         strata = annotation.strata_table(main, frame)

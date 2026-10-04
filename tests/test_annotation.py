@@ -114,3 +114,33 @@ def test_agreement_kappa():
     assert abs(result["cohen_kappa"] - 1.0) < 1e-12 and result["percent_agreement"] == 1.0
     b = a[1:] + a[:1]
     assert annotation.agreement(a, b)["cohen_kappa"] < 0.5
+
+
+def test_translated_workbook_with_glossary(tmp_path):
+    """Файл с переводом-подсказкой: колонка «Тональность» сдвигается, чтение идёт по названиям колонок."""
+    news = make_news(300)
+    main, _ = annotation.make_samples(news, "en", 12, 3, seed=5)
+    translations = pd.DataFrame({"url": main["url"], "translation": [f"Перевод {i}" for i in range(len(main))]})
+    sample = annotation.add_translations(main, translations)
+    glossary = pd.DataFrame({"term": ["Кит (whale)", "ETF"], "meaning": ["Крупный держатель", "Биржевой фонд"]})
+    path = tmp_path / "annotation_en_main.xlsx"
+    annotation.write_workbook(sample, path, "# Инструкция\n\nТекст.", "Заголовок", glossary=glossary)
+
+    book = load_workbook(path)
+    assert book.sheetnames == ["Инструкция", "Разметка", "Словарь", "_key"]
+    sheet = book["Разметка"]
+    assert [c.value for c in sheet[1]][:5] == ["№", "Заголовок", annotation.HEADER_TRANSLATION,
+                                              "Тональность", "Комментарий (необязательно)"]
+    assert sheet["C2"].value == "Перевод 0"
+    assert "D2:D13" in str(sheet.data_validations.dataValidation[0].sqref)
+    assert book["Словарь"]["A2"].value == "Кит (whale)"
+    sheet["D2"] = "негативная"
+    sheet["E2"] = "перевод странный"
+    sheet["D5"] = "позитивная"
+    book.save(path)
+
+    labels = annotation.read_workbook(path)
+    assert labels.loc[0, "label"] == "negative" and labels.loc[3, "label"] == "positive"
+    assert labels.loc[0, "comment"] == "перевод странный"
+    assert labels["label"].notna().sum() == 2 and not labels["title_changed"].any()
+    assert annotation.add_translations(main, None) is main
