@@ -142,12 +142,17 @@ def costs_table(frames: dict, costs: list, primary: float) -> pd.DataFrame:
     for symbol, table in frames.items():
         flat = table[table["strategy"] == "long_flat"].pivot_table(index="label", columns="cost_bp", values="sharpe",
                                                                      sort=False)
+        gross = table[(table["strategy"] == "long_flat") & (table["cost_bp"] == 0)].set_index("label")
         short = table[(table["strategy"] == "long_short") & (table["cost_bp"] == primary)]
         for name in flat.index:
             row = {"Актив": symbol, "Стратегия": name}
             for cost in costs:
                 value = flat.loc[name, cost] if cost in flat.columns else np.nan
                 row[f"Шарп long/flat, {cost:g} б. п."] = round(value, 2) if pd.notna(value) else None
+            for column, title in (("sharpe_diff", "Разница с buy-and-hold, 0 б. п."), ("ci_low", "95% ДИ: от"),
+                                  ("ci_high", "до")):
+                value = gross.loc[name, column] if name in gross.index and column in gross.columns else np.nan
+                row[title] = round(float(value), 2) if pd.notna(value) else None
             match = short[short["label"] == name]
             row[f"Шарп long/short, {primary:g} б. п."] = round(match["sharpe"].iloc[0], 2) if len(match) and pd.notna(match["sharpe"].iloc[0]) else None
             rows.append(row)
@@ -510,7 +515,8 @@ def main() -> None:
                          questions_table(questions))]),
         ("Т5 Стратегии", [(f"Т5. Стратегия long/flat при издержках {primary:g} б. п.: коэффициент Шарпа и разница с buy-and-hold",
                            strategy_table(trading, "long_flat", primary))]),
-        ("П1 Издержки", [("П1. Коэффициент Шарпа при разных издержках; long/short — при основных издержках",
+        ("П1 Издержки", [("П1. Коэффициент Шарпа при разных издержках; разница с buy-and-hold без издержек (95% ДИ); "
+                          "long/short — при основных издержках",
                           costs_table(trading, costs, primary))]),
         ("П2 Фолды", [("П2. RMSE относительно нулевого прогноза по фолдам (столбец — начало фолда)", folds_table(folds))]),
         ("П3 Грейнджер", [("П3. Тест Грейнджера (прогностическое предшествование, HAC): оба направления, "
