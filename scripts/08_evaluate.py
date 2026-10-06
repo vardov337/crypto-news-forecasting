@@ -7,8 +7,8 @@
      нулевого прогноза и для вопросов В1 и В2, тест Песарана–Тиммерманна, Model Confidence Set;
   3. проверяет стратегии long/flat и long/short при издержках 0, 5, 10 и 20 б. п. против
      buy-and-hold; интервалы для разницы коэффициентов Шарпа — стационарный бутстреп;
-  4. применяет заранее зафиксированный критерий выбора модели (раздел 9);
-  5. описательно — тест Грейнджера: предсказывают ли лаги новостных признаков доходность.
+  4. применяет заранее зафиксированный критерий выбора модели (раздел 9).
+Тест Грейнджера — отдельный шаг 8в (scripts/08c_granger.py).
 
 Видеокарта не нужна, работает несколько минут.
 Запуск:  python scripts/08_evaluate.py
@@ -25,7 +25,6 @@ from cryptonews.evaluation import backtest, metrics
 from cryptonews.evaluation import tests as stat_tests
 from cryptonews.evaluation.predictions import (BASELINES, MEAN, ZERO, collect_all, combine, combined_path,
                                                 key_of, label)
-from cryptonews.features import TARGET
 from cryptonews.models import run
 from cryptonews.utils import get_logger, run_manifest, save_json, set_seed
 
@@ -177,19 +176,6 @@ def fold_table(y: pd.Series, preds: dict, keys: list, splits: dict) -> pd.DataFr
     return pd.DataFrame(rows)
 
 
-def granger_table(cfg: dict, table: pd.DataFrame, splits: dict) -> pd.DataFrame:
-    g_cfg = cfg["evaluation"].get("granger", {})
-    test_rows = table.index[(table.index >= splits["folds"][0].test_start) & (table.index < splits["folds"][-1].test_end)]
-    rows = []
-    for lang in cfg["features"]["news"]["languages"]:
-        news = [f"{lang}_{name}" for name in g_cfg.get("variables", ["sent_mean", "news_intensity"])]
-        for lags in g_cfg.get("lags", [1, 6, 24]):
-            for sample, subset in (("full", None), ("test", test_rows)):
-                result = stat_tests.granger_news(table, TARGET, "ret_lag1", news, int(lags), subset)
-                rows.append({"language": lang, "variables": ", ".join(news), "sample": sample, **result})
-    return pd.DataFrame(rows)
-
-
 def show(frame: pd.DataFrame, columns: dict, digits: dict | None = None) -> str:
     view = frame[list(columns)].rename(columns=columns).copy()
     for column, places in (digits or {}).items():
@@ -203,7 +189,7 @@ def main() -> None:
     log = get_logger()
     seed = int(cfg["seeds"]["default"][0])
     set_seed(seed)
-    data_dir, results_dir = cfg["paths"]["data_dir"], cfg["paths"]["results_dir"]
+    results_dir = cfg["paths"]["results_dir"]
     tables_dir = results_dir / "tables"
     tables_dir.mkdir(parents=True, exist_ok=True)
     alpha = float(cfg["evaluation"]["dm_test"]["alpha"])
@@ -239,11 +225,9 @@ def main() -> None:
         trading = trading_tables(cfg, y, preds, keys, seed, log, symbol)
         selection = selection_table(accuracy, trading, cfg)
         folds = fold_table(truth, {k: pd.Series(v, index=rows) for k, v in preds.items()}, keys, splits)
-        features_path = data_dir / "processed" / f"features_{symbol}.parquet"
-        granger = granger_table(cfg, pd.read_parquet(features_path), splits)
 
         for name, frame in (("accuracy", accuracy), ("questions", questions), ("trading", trading),
-                            ("selection", selection), ("folds", folds), ("granger", granger)):
+                            ("selection", selection), ("folds", folds)):
             frame.to_csv(tables_dir / f"eval_{name}_{symbol}.csv", index=False, encoding="utf-8")
 
         family_size = int(accuracy["dm_vs_zero_p_holm"].notna().sum())
@@ -276,9 +260,6 @@ def main() -> None:
                        "сравнение точности — по Model Confidence Set")
         log.info("[%s] ВЫВОД: %s. В Model Confidence Set (α = %.2f): %s", symbol, verdict, float(m_cfg["alpha"]),
                  ", ".join(accuracy.loc[accuracy["in_mcs"] == True, "label"]))  # noqa: E712
-        log.info("[%s] тест Грейнджера (описательный; HAC, p-значения):\n%s", symbol,
-                 show(granger, {"language": "Язык", "sample": "Выборка", "lags": "Лагов", "df": "Степ. св.",
-                                "wald": "Вальд", "p_value": "p"}, {"wald": 2, "p_value": 3}))
         report[symbol] = {"rows": len(rows), "missing_models": missing, "selected": best["key"].tolist(),
                           "in_mcs": accuracy.loc[accuracy["in_mcs"] == True, "key"].tolist(),  # noqa: E712
                           "verdict": verdict}

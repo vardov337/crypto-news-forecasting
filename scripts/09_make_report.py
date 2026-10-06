@@ -12,7 +12,7 @@
 
 Видеокарта не нужна, около минуты. Если шаг 8 запускался до появления общей таблицы
 прогнозов, она сначала собирается из файлов шага 7 — это ещё несколько минут.
-Запуск:  python scripts/09_make_report.py   (после шагов 8 и 8б)
+Запуск:  python scripts/09_make_report.py   (после шагов 8, 8б и 8в)
 """
 import json
 import zipfile
@@ -36,7 +36,7 @@ SET_NAMES = {"P_EN": "P_EN — цены и англ. новости", "P_RU": "P
 def table_path(results_dir, name: str):
     path = results_dir / "tables" / name
     if not path.exists():
-        raise SystemExit(f"Нет {path} — сначала выполните шаги 8 и 8б")
+        raise SystemExit(f"Нет {path} — сначала выполните шаги 8, 8б и 8в")
     return path
 
 
@@ -165,13 +165,29 @@ def folds_table(frames: dict) -> pd.DataFrame:
     return pd.concat(parts, ignore_index=True)
 
 
+DEPENDENT = {"return": "доходность", "sent_mean": "средняя тональность", "news_intensity": "интенсивность"}
+
+
 def granger_table(frames: dict) -> pd.DataFrame:
     rows = []
     for symbol, table in frames.items():
         for r in table.itertuples():
-            rows.append({"Актив": symbol, "Язык": LANGUAGE[r.language], "Выборка": "вся" if r.sample == "full" else "тест",
-                         "Лагов, ч": r.lags, "Степеней свободы": r.df, "Статистика Вальда": round(r.wald, 2),
-                         "p": round(r.p_value, 3), "Наблюдений": r.n})
+            rows.append({"Актив": symbol, "Язык": LANGUAGE[r.language], "Направление": r.direction,
+                         "Зависимая переменная": DEPENDENT.get(r.dependent, r.dependent),
+                         "Выборка": "вся" if r.sample == "full" else "тест",
+                         "Лагов, ч": f"{r.lags} (BIC)" if r.lag_choice == "по BIC" else str(r.lags),
+                         "Степеней свободы": r.df, "Статистика Вальда": round(r.wald, 2), "p": round(r.p_value, 3),
+                         "Наблюдений": r.n})
+    return pd.DataFrame(rows)
+
+
+def stationarity_table(frames: dict) -> pd.DataFrame:
+    rows = []
+    for symbol, table in frames.items():
+        for r in table.itertuples():
+            rows.append({"Актив": symbol, "Ряд": r.variable, "Выборка": "вся" if r.sample == "full" else "тест",
+                         "Статистика ADF": round(r.adf_stat, 2), "p": round(r.p_value, 4), "Лагов (AIC)": r.lags_used,
+                         "Наблюдений": r.n})
     return pd.DataFrame(rows)
 
 
@@ -224,7 +240,7 @@ def sources_table(results_dir) -> pd.DataFrame:
 
 def figure_strategies(plt, combined: dict, trading: dict, cfg: dict, out_dir) -> dict:
     from matplotlib.dates import MonthLocator
-    from matplotlib.ticker import FuncFormatter, NullFormatter
+    from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 
     s_cfg = cfg["evaluation"]["strategy"]
     cost, periods = float(s_cfg["primary_cost_bp"]), float(s_cfg["annualization_hours"])
@@ -246,8 +262,8 @@ def figure_strategies(plt, combined: dict, trading: dict, cfg: dict, out_dir) ->
                                     (net, f"{label(best)}, {cost:g} б. п.", report.SERIES[2])):
             ax.plot(when, np.cumprod(1.0 + series), color=color, label=name)
         ax.set_yscale("log")
-        ax.yaxis.set_major_formatter(FuncFormatter(
-            lambda v, _: report.comma_number(v, 0 if v >= 1 else (1 if v >= 0.1 else 2))))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",")))
+        ax.yaxis.set_major_locator(LogLocator(base=10, subs=(1.0, 2.0, 5.0)))
         ax.yaxis.set_minor_formatter(NullFormatter())
         ax.xaxis.set_major_locator(MonthLocator(bymonth=(1, 7)))
         ax.xaxis.set_major_formatter(report.month_formatter())
@@ -284,8 +300,8 @@ def figure_breakeven(plt, trading: dict, cfg: dict, out_dir) -> None:
 
 def figure_accuracy(plt, accuracy: dict, out_dir) -> None:
     keys = [k for k in next(iter(accuracy.values()))["key"] if k != "naive_zero:none"]
-    fig, axes = plt.subplots(1, len(accuracy), figsize=(7.2, 0.22 * len(keys) + 1.0), constrained_layout=True,
-                             sharey=True)
+    fig, axes = plt.subplots(1, len(accuracy), figsize=(7.2, 0.22 * len(keys) + 1.2), layout="constrained",
+                             sharey=True, sharex=True)
     positions = np.arange(len(keys))[::-1]
     for ax, (symbol, table) in zip(np.atleast_1d(axes), accuracy.items()):
         values = table.set_index("key").loc[keys, "rmse_ratio_zero"].to_numpy(float)
@@ -293,13 +309,13 @@ def figure_accuracy(plt, accuracy: dict, out_dir) -> None:
         ax.scatter(100 * (values - 1), positions, s=22, color=report.SERIES[0], edgecolor="white", linewidth=1.0,
                    zorder=3)
         ax.set_title(ASSET.get(symbol, symbol), loc="left")
-        ax.set_xlabel("Изменение RMSE относительно нулевого прогноза, %")
         spread = float(np.nanmax(np.abs(100 * (values - 1)))) if len(values) else 0.0
         ax.xaxis.set_major_formatter(report.comma_formatter(2 if spread < 1 else 1 if spread < 10 else 0))
         ax.grid(axis="y", visible=False)
     first = np.atleast_1d(axes)[0]
     first.set_yticks(positions)
     first.set_yticklabels([label(k) for k in keys])
+    fig.supxlabel("Изменение RMSE относительно нулевого прогноза, %", fontsize=8.5, color=report.INK2)
     report.save_figure(fig, out_dir / "fig3_accuracy")
     plt.close(fig)
 
@@ -360,7 +376,7 @@ def main() -> None:
 
     read = lambda name: {s: pd.read_csv(table_path(results_dir, name.format(s))) for s in symbols}  # noqa: E731
     accuracy, questions, trading = read("eval_accuracy_{}.csv"), read("eval_questions_{}.csv"), read("eval_trading_{}.csv")
-    folds, granger = read("eval_folds_{}.csv"), read("eval_granger_{}.csv")
+    folds, granger, adf = read("eval_folds_{}.csv"), read("granger_{}.csv"), read("stationarity_{}.csv")
     shift, placebo = read("leakage_shift_{}.csv"), read("leakage_placebo_{}.csv")
     combined = {}
     for symbol in symbols:
@@ -390,8 +406,9 @@ def main() -> None:
         ("П1 Издержки", [("П1. Коэффициент Шарпа при разных издержках; long/short — при основных издержках",
                           costs_table(trading, costs, primary))]),
         ("П2 Фолды", [("П2. RMSE относительно нулевого прогноза по фолдам (столбец — начало фолда)", folds_table(folds))]),
-        ("П3 Грейнджер", [("П3. Тест Грейнджера: лаги новостных признаков и доходность следующего часа (HAC)",
-                           granger_table(granger))]),
+        ("П3 Грейнджер", [("П3. Тест Грейнджера (прогностическое предшествование, HAC): оба направления, "
+                           "лаги 1, 6, 24 ч и по BIC", granger_table(granger)),
+                          ("Стационарность рядов: расширенный тест Дики–Фуллера", stationarity_table(adf))]),
         ("П4 Утечка", [("П4. Тест сдвига (XGBoost): изменение MSE относительно набора P, %", shift_table),
                        ("Плацебо-тест: модель обучена на перемешанной цели", placebo_table)]),
         ("П5 Гиперпараметры", [("П5. Гиперпараметры, выбранные на окне настройки", tuned),
