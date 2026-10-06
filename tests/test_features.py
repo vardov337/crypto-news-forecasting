@@ -179,3 +179,17 @@ def test_diagnostics_catch_bad_data():
     published = pd.Series(pd.to_datetime(["2024-01-01 10:30"], utc=True))
     with pytest.raises(diagnostics.PipelineError):
         diagnostics.check_news_alignment(pd.Series(pd.to_datetime(["2024-01-01 11:00"], utc=True)), published)
+
+
+def test_shared_timestamps_are_detected_per_source():
+    from cryptonews.data import news as news_rules
+
+    bulk = pd.Timestamp("2019-04-17 13:00:00", tz="UTC")
+    frame = pd.DataFrame({
+        "published_utc": [bulk] * 12 + [bulk] * 3 + list(pd.date_range("2019-05-01", periods=5, freq="h", tz="UTC")),
+        "source": ["a.com"] * 12 + ["b.com"] * 3 + ["a.com"] * 5,
+    })
+    groups = news_rules.shared_timestamp_groups(frame, 10)
+    assert len(groups) == 1 and groups.loc[0, "source"] == "a.com" and groups.loc[0, "Записей"] == 12
+    mask = news_rules.shared_timestamp_mask(frame, 10)
+    assert int(mask.sum()) == 12 and not mask.iloc[12:15].any()

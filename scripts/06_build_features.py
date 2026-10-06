@@ -24,6 +24,7 @@ import pandas as pd
 from cryptonews import align, diagnostics, features, period, validation
 from cryptonews.cli import parse_args
 from cryptonews.config import load_config
+from cryptonews.data import news as news_rules
 from cryptonews.utils import get_logger, run_manifest, save_json, sha256_file
 
 LANGUAGES = ("en", "ru")
@@ -49,8 +50,24 @@ def load_scored_news(cfg: dict, log) -> tuple[dict, dict, dict]:
         merged = frame.merge(scores, on="url", how="inner", validate="one_to_one")
         if len(merged) != len(frame):
             raise SystemExit(f"[{lang}] оценки тональности есть не для всех новостей: {len(merged)} из {len(frame)}")
+        min_records = int(cfg["data"].get("time_precision", {}).get("shared_timestamp_min_records", 10))
+        groups = news_rules.shared_timestamp_groups(merged, min_records)
+        shared = news_rules.shared_timestamp_mask(merged, min_records)
+        groups.to_csv(cfg["paths"]["results_dir"] / "tables" / f"shared_timestamps_{lang}.csv",
+                      index=False, encoding="utf-8")
+        if shared.any():
+            log.info("[%s] не идут в признаки %d записей с общей меткой времени (%d групп по %d и больше "
+                     "материалов одного источника с одной секундой):\n%s", lang, int(shared.sum()), len(groups),
+                     min_records, groups.head(10).to_string(index=False))
+        else:
+            log.info("[%s] групп записей с общей меткой времени нет", lang)
+        merged = merged[~shared].reset_index(drop=True)
+        busiest = align.hour_of(merged["published_utc"]).value_counts().head(5)
+        log.info("[%s] часы с наибольшим числом новостей: %s", lang,
+                 ", ".join(f"{hour:%Y-%m-%d %H:%M} — {count}" for hour, count in busiest.items()))
         news[lang] = merged
         inputs[lang] = {"news": str(news_path), "news_sha256": sha256_file(news_path),
+                        "shared_timestamp_records_excluded": int(shared.sum()),
                         "scores": str(scores_path), "scores_sha256": sha256_file(scores_path)}
         chosen[lang] = {"model": choice[lang]["model"], "revision": choice[lang]["revision"]}
         log.info("[%s] модель тональности: %s (ревизия %s), новостей с оценками: %d",

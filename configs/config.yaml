@@ -51,6 +51,8 @@ data:
   dedup:
     window_hours: 24
     keep: earliest
+  time_precision:
+    shared_timestamp_min_records: 10   # столько материалов одного источника с одной секундой — время загрузки архива; в признаки не идут
 
 sentiment:
   score: p_pos_minus_p_neg      # s = P(позитив) − P(негатив); класс — с максимальной вероятностью

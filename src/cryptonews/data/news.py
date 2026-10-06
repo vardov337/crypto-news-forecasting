@@ -119,6 +119,23 @@ def imprecise_mask(frame: pd.DataFrame, column: str = "published_utc") -> pd.Ser
     return mask
 
 
+def shared_timestamp_groups(frame: pd.DataFrame, min_records: int = 10,
+                            column: str = "published_utc") -> pd.DataFrame:
+    """Группы записей одного источника с одинаковым временем публикации до секунды.
+
+    Десять и больше материалов одного сайта с одной и той же секундой — это не время
+    публикации, а время загрузки архива: настоящие моменты выхода таких новостей неизвестны."""
+    sizes = frame.groupby(["source", column]).size().rename("Записей").reset_index()
+    groups = sizes[sizes["Записей"] >= min_records].sort_values("Записей", ascending=False)
+    return groups.reset_index(drop=True)
+
+
+def shared_timestamp_mask(frame: pd.DataFrame, min_records: int = 10, column: str = "published_utc") -> pd.Series:
+    """True у записей из групп shared_timestamp_groups."""
+    size = frame.groupby(["source", column])[column].transform("size")
+    return size >= min_records
+
+
 def clean_utc(frame: pd.DataFrame, dedup_window_hours: int = 24,
               first_stage: str = "Записей в наборе",
               precision_column: str = "published_utc") -> tuple[pd.DataFrame, pd.DataFrame]:
