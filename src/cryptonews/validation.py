@@ -59,6 +59,16 @@ def from_config(cfg: dict, start: pd.Timestamp, end: pd.Timestamp) -> dict:
                         tuning_months=int(v["tuning_window_months"]), embargo_hours=int(v.get("embargo_hours", 1)))
 
 
+def from_json(data: dict) -> dict:
+    """Обратное к as_json: схема из results/splits.json."""
+    def window(item: dict) -> Window:
+        return Window(item["name"], pd.Timestamp(item["train_end"]), pd.Timestamp(item["test_start"]),
+                      pd.Timestamp(item["test_end"]))
+    return {"sample_start": pd.Timestamp(data["sample_start"]), "sample_end": pd.Timestamp(data["sample_end_exclusive"]),
+            "embargo_hours": data["embargo_hours"], "tuning": window(data["tuning"]),
+            "folds": [window(item) for item in data["folds"]]}
+
+
 def as_json(splits: dict) -> dict:
     return {"sample_start": str(splits["sample_start"]), "sample_end_exclusive": str(splits["sample_end"]),
             "embargo_hours": splits["embargo_hours"], "tuning": splits["tuning"].as_dict(),

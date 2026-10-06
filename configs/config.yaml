@@ -128,10 +128,11 @@ models:
     q: [0, 1, 2, 3]
     d: 0
     criterion: aic
+    estimation_window_hours: 8760   # ARIMA и ARIMAX оцениваются на последнем годе перед фолдом (раздел 12)
   arimax:
     order_from: arima
     exog_feature_sets: [P_EN, P_RU, P_EN_RU]   # экзогенные — только новостные признаки
-  random_forest:
+  random_forest:                  # режим случайного леса XGBoost на видеокарте (раздел 12)
     n_estimators: [300]
     max_depth: [5, 10, null]
     min_samples_leaf: [50, 200]
