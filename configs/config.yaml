@@ -98,6 +98,8 @@ features:
     trend_window: 3
     sentiment_lag: 1
     no_news_fill: 0.0
+    intensity_window_hours: 168     # интенсивность потока: ln(1+N_t) − ln(1+среднее N за предыдущие 168 ч) вместо сырого N_t
+    asset_rule: coin_or_market_wide # новость идёт активу, если упоминает его или не упоминает ни BTC, ни ETH
   feature_sets:
     P: [price]
     P_EN: [price, en]
@@ -109,6 +111,7 @@ validation:
   test_months: 24                 # ⚑
   fold_months: 3                  # ⚑ переобучение раз в квартал
   tuning_window_months: 3         # окно выбора гиперпараметров перед тестом
+  embargo_hours: 1                # цель строки t известна в t + 2 ч: последняя строка перед фолдом в обучение не идёт
   early_stopping_fraction: 0.1
 
 seeds:
