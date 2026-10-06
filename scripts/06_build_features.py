@@ -153,9 +153,10 @@ def main() -> None:
              len(splits["folds"]), splits["embargo_hours"])
 
     out_dir = data_dir / "processed"
-    reports, summaries = {}, []
+    reports, summaries, targets = {}, [], {}
     for symbol, frame in prices.items():
         table, reports[symbol] = build_asset(symbol, frame, news, span, cfg, log)
+        targets[symbol] = table.loc[table["valid"], features.TARGET]
         out_path = out_dir / f"features_{symbol}.parquet"
         table.to_parquet(out_path)
         reports[symbol]["file"] = str(out_path)
@@ -163,6 +164,12 @@ def main() -> None:
         coverage = coverage_by_year(table)
         coverage.to_csv(results_dir / "tables" / f"news_coverage_by_year_{symbol}.csv", encoding="utf-8")
         log.info("%s: доля часов с новостями по годам:\n%s", symbol, coverage.to_string())
+
+    threshold = float(cfg["diagnostics"].get("report_abs_hourly_return", 0.15))
+    moves = diagnostics.large_moves(targets, threshold)
+    moves.to_csv(results_dir / "tables" / "large_hourly_moves.csv", encoding="utf-8")
+    log.info("Часы с изменением цены больше %.0f%% хотя бы у одного актива (%d шт.; рядом — второй актив):\n%s",
+             100 * threshold, len(moves), moves.to_string() if len(moves) else "нет")
 
     stats = pd.concat(summaries, ignore_index=True)
     stats.round(6).to_csv(results_dir / "tables" / "features_summary.csv", index=False, encoding="utf-8")

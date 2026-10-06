@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 
@@ -20,13 +21,30 @@ def check_monotonic(index: pd.DatetimeIndex, name: str) -> None:
         raise PipelineError(f"{name}: метки времени идут не по возрастанию")
 
 
+def simple_return(log_return: pd.Series) -> pd.Series:
+    return np.expm1(log_return)
+
+
 def check_target(target: pd.Series, limit: float, name: str) -> None:
-    """Скачок целевой переменной больше limit за час — ошибка пайплайна."""
-    jumps = target[target.abs() > limit]
+    """Скачок цены больше limit за час (простая доходность) — ошибка данных, а не рынка.
+
+    Порог рассчитан на грубые ошибки вроде смешения рядов BTC и ETH (доходность в разы),
+    а не на реальные обвалы: 12.03.2020 биткоин на Binance упал за час на 18%."""
+    jumps = target[simple_return(target).abs() > limit]
     if len(jumps):
-        examples = ", ".join(f"{t:%Y-%m-%d %H:%M} ({v:+.3f})" for t, v in jumps.head(5).items())
-        raise PipelineError(f"{name}: лог-доходность за час по модулю больше {limit}: {examples}. "
+        examples = ", ".join(f"{t:%Y-%m-%d %H:%M} ({np.expm1(v):+.1%})" for t, v in jumps.head(5).items())
+        raise PipelineError(f"{name}: изменение цены за час по модулю больше {limit:.0%}: {examples}. "
                             "Проверьте цены за эти часы")
+
+
+def large_moves(targets: dict[str, pd.Series], threshold: float) -> pd.DataFrame:
+    """Часы, когда хотя бы один актив сдвинулся больше threshold, с доходностями всех активов.
+
+    Если в тот же час сильно двигался и другой актив, это событие рынка, а не сбой данных."""
+    simple = pd.DataFrame({name: simple_return(series) for name, series in targets.items()})
+    flagged = simple[(simple.abs() > threshold).any(axis=1)]
+    flagged.index.name = "Час (строка t; доходность свечи t + 1)"
+    return flagged.round(4)
 
 
 def check_news_alignment(news_hours: pd.Series, published: pd.Series) -> None:

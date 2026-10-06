@@ -167,8 +167,13 @@ def test_walk_forward_splits():
 def test_diagnostics_catch_bad_data():
     index = grid(hours=3)
     with pytest.raises(diagnostics.PipelineError):
-        diagnostics.check_target(pd.Series([0.01, 0.5, -0.02], index=index), 0.2, "BTC")
-    diagnostics.check_target(pd.Series([0.01, np.nan, -0.02], index=index), 0.2, "BTC")
+        diagnostics.check_target(pd.Series([0.01, np.log(0.6), -0.02], index=index), 0.2, "BTC")   # −40%
+    diagnostics.check_target(pd.Series([0.01, np.nan, -0.201], index=index), 0.2, "BTC")    # −18,2%: 12.03.2020
+    with pytest.raises(diagnostics.PipelineError):
+        diagnostics.check_target(pd.Series([np.log(0.03)], index=index[:1]), 0.5, "BTC")         # ряд ETH вместо BTC
+    moves = diagnostics.large_moves({"BTC": pd.Series([0.01, -0.201, 0.0], index=index),
+                                     "ETH": pd.Series([0.0, -0.25, 0.3], index=index)}, 0.15)
+    assert len(moves) == 2 and moves.iloc[0]["BTC"] == pytest.approx(np.expm1(-0.201), abs=1e-4)
     with pytest.raises(diagnostics.PipelineError):
         diagnostics.check_monotonic(index.append(index[:1]), "BTC")
     published = pd.Series(pd.to_datetime(["2024-01-01 10:30"], utc=True))

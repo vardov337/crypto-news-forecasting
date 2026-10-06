@@ -177,6 +177,7 @@ evaluation:
     require_significance: true
 
 diagnostics:
-  max_abs_hourly_return: 0.20
+  max_abs_hourly_return: 0.50     # простая доходность за час; больше — ошибка данных, расчёт останавливается
+  report_abs_hourly_return: 0.15  # часы с движением больше этого выводятся в отчёт для проверки по другому активу
   shift_test_hours: [1, 2, 3, 24]
   placebo_permutations: 20
