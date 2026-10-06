@@ -163,9 +163,12 @@ models:
 
 evaluation:
   metrics: [rmse, mae, directional_accuracy, r2_oos]
-  dm_test: {loss: squared, hac: newey_west, alpha: 0.05, multiple_testing: holm}
+  dm_test: {loss: squared, hac: newey_west, alpha: 0.05, multiple_testing: holm}   # односторонний; лаги HAC — floor(4·(T/100)^(2/9))
   pt_test: {alpha: 0.05}
-  mcs: {alpha: 0.10, loss: squared, bootstrap_reps: 1000}
+  mcs: {alpha: 0.10, loss: squared, bootstrap_reps: 1000}     # пакет arch: статистика R, стационарный бутстреп, блок — mean_block_hours
+  granger:                          # описательный тест (раздел 8): на выбор модели не влияет
+    lags: [1, 6, 24]
+    variables: [sent_mean, news_intensity]
   strategy:
     primary: long_flat            # ⚑
     secondary: long_short
@@ -187,3 +190,5 @@ diagnostics:
   report_abs_hourly_return: 0.15  # часы с движением больше этого выводятся в отчёт для проверки по другому активу
   shift_test_hours: [1, 2, 3, 24]
   placebo_permutations: 20
+  leakage_model: xgboost            # модель для теста сдвига и плацебо: гиперпараметры — выбранные на шаге 7, одно зерно
+  placebo_feature_set: P_EN_RU
