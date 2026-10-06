@@ -177,11 +177,19 @@ def fake_xgboost():
     seen = {}
 
     class XGBRegressor:
+        """Бустинг или — при num_parallel_tree — случайный лес (один шаг из многих деревьев)."""
         def __init__(self, **kw):
-            seen["xgb"] = kw
-            self.kw = kw
+            self.kw, self.forest = kw, "num_parallel_tree" in kw
+            seen["rf" if self.forest else "xgb"] = kw
 
         def fit(self, X, y, eval_set=None, verbose=False):
+            if self.forest:
+                assert eval_set is None and self.kw["n_estimators"] == 1
+                self.model = RandomForestRegressor(n_estimators=5, max_depth=self.kw["max_depth"] or None,
+                                                   min_samples_leaf=int(self.kw["min_child_weight"]),
+                                                   max_features=self.kw["colsample_bynode"],
+                                                   random_state=self.kw["random_state"]).fit(X, y)
+                return self
             assert eval_set is not None and len(eval_set[0][0]) > 0
             self.model = GradientBoostingRegressor(n_estimators=10, max_depth=self.kw["max_depth"],
                                                    random_state=self.kw["random_state"]).fit(X, y)
@@ -191,24 +199,8 @@ def fake_xgboost():
         def predict(self, X):
             return self.model.predict(X)
 
-    class XGBRFRegressor:
-        def __init__(self, **kw):
-            seen["rf"] = kw
-            self.kw = kw
-
-        def fit(self, X, y):
-            depth = self.kw["max_depth"] or None
-            self.model = RandomForestRegressor(n_estimators=5, max_depth=depth,
-                                               min_samples_leaf=int(self.kw["min_child_weight"]),
-                                               max_features=self.kw["colsample_bynode"],
-                                               random_state=self.kw["random_state"]).fit(X, y)
-            return self
-
-        def predict(self, X):
-            return self.model.predict(X)
-
     module = types.ModuleType("xgboost")
-    module.XGBRegressor, module.XGBRFRegressor, module.seen = XGBRegressor, XGBRFRegressor, seen
+    module.XGBRegressor, module.seen = XGBRegressor, seen
     return module
 
 
@@ -226,6 +218,7 @@ def test_trees_tuning_and_folds_with_stub(tmp_path):
             assert len(list(folder.glob("fold_*__seed*.parquet"))) == 4        # 2 фолда × 2 зерна
         rf = xgb.seen["rf"]
         assert rf["subsample"] == 0.632 and rf["learning_rate"] == 1.0 and rf["reg_lambda"] == 0.0
+        assert rf["n_estimators"] == 1 and rf["num_parallel_tree"] == 10
         xg = xgb.seen["xgb"]
         assert xg["early_stopping_rounds"] == 5 and xg["tree_method"] == "hist"
         pred = run.collect(tmp_path, "ETHUSDT", "xgboost", "P", 2)

@@ -1,0 +1,63 @@
+source,dataset_utc,url,site_time,reference,verdict
+blockworks.co,2021-01-23 13:57:04,https://blockworks.co/news/tyler-winklevoss-dont-wait-on-government-to-fix-inflation,"January 23, 2021 08:57 am (New York) = 13:57 UTC",,ok
+blockworks.co,2022-01-19 11:00:04,https://blockworks.co/news/can-intel-chip-away-at-the-17b-bitcoin-mining-market-with-new-asic,"January 19, 2022 06:00 am (New York) = 11:00 UTC",,ok
+blockworks.co,2023-05-10 16:29:50,https://blockworks.co/news/self-custody-wallets-need-identities,"May 10, 2023 12:29 pm (New York) = 16:29 UTC",,ok
+blockworks.co,2023-08-02 15:37:05,https://blockworks.co/news/kucoin-mining-pool-halt-operations,"August 2, 2023 11:37 am (New York) = 15:37 UTC",,ok
+blockworks.co,2024-02-12 20:53:32,https://blockworks.co/news/franklin-templeton-ethereum-etf,"February 12, 2024 03:53 pm (New York) = 20:53 UTC",,ok
+blockworks.co,2025-05-02 19:30:00,https://blockworks.co/news/spot-crypto-trading-wall-street-interestschwab,"May 2, 2025 03:30 pm (New York) = 19:30 UTC",,ok
+coindesk.com,2019-05-29 20:00:00,https://www.coindesk.com/markets/2019/05/29/telegram-based-crypto-wallet-app-now-allows-fiat-purchases,parsely-pub-date 2019-05-29T20:00:52Z,,ok_seconds_truncated
+coindesk.com,2020-08-27 20:51:00,https://www.coindesk.com/markets/2020/08/27/prosecutors-detail-shadow-bank-accounts-in-fowler-crypto-case,parsely-pub-date 2020-08-27T20:51:53Z,,ok_seconds_truncated
+coindesk.com,2021-11-17 14:00:00,https://www.coindesk.com/tech/2021/11/17/oasis-launches-160m-ecosystem-fund-with-backing-from-jump-capital-and-others,parsely-pub-date 2021-11-17T14:00:30.828Z,,ok_seconds_truncated
+coindesk.com,2022-11-09 15:32:00,https://www.coindesk.com/business/2022/11/09/binance-is-strongly-leaning-toward-scrapping-ftx-rescue-takeover-after-first-glance-at-books-source,parsely-pub-date 2022-11-09T15:32:18.573Z,,ok_seconds_truncated
+coindesk.com,2023-09-15 19:52:00,https://www.coindesk.com/policy/2023/09/15/doj-slams-sam-bankman-frieds-intrusive-proposed-jury-questions,parsely-pub-date 2023-09-15T19:52:38.482Z,,ok_seconds_truncated
+coindesk.com,2025-04-17 06:53:00,https://www.coindesk.com/markets/2025/04/17/panama-city-greenlights-bitcoin-ether-payments-for-tax-and-city-services,parsely-pub-date 2025-04-17T06:53:06.795Z,,ok_seconds_truncated
+cointelegraph.com,2017-12-04 09:30:00,https://cointelegraph.com/press-releases/leverj-token-sale-ends-on-december-7th-for-first-decentralized-cryptocurrency-derivatives-trading-platform,no date on page,,not_checked
+cointelegraph.com,2021-10-07 16:10:00,https://cointelegraph.com/press-releases/why-compliance-transparency-and-security-are-the-key-pillars-to-huobi-trusts-custody-strategy,no date on page,,not_checked
+cointelegraph.com,2022-09-21 04:44:00,https://cointelegraph.com/news/regulatory-clarity-will-drive-the-next-bull-run-hedge-fund-co-founder,article:published_time 2022-09-21T05:44:53.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2024-01-31 00:03:00,https://cointelegraph.com/news/terraform-labs-bankruptcy-will-aid-sec-suit-appeal,article:published_time 2024-01-31T00:03:59.000Z,,ok_seconds_truncated
+cointelegraph.com,2024-10-03 17:59:00,https://cointelegraph.com/news/imf-pressures-el-salvador-overhaul-bitcoin-regulations,article:published_time 2024-10-03T18:59:55.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2025-05-22 13:19:00,https://cointelegraph.com/news/these-4-memecoins-can-outperform-bitcoin-this-cycle,no date on page,,not_checked
+cointelegraph.com,2019-10-25 15:07:00,https://cointelegraph.com/news/final-russian-nuclear-scientist-jailed-for-mining-bitcoin-at-work,article:published_time 2019-10-25T16:07:00.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2021-06-11 21:35:00,https://cointelegraph.com/news/altcoin-roundup-market-cycle-analysis-screamed-take-profit-ahead-of-may-19-sell-off,article:published_time 2021-06-11T22:35:00.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2021-09-14 12:47:00,https://cointelegraph.com/news/uzbekistan-has-no-plans-to-ease-crypto-payments-ban-says-official,article:published_time 2021-09-14T13:47:00.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2022-06-24 14:50:00,https://cointelegraph.com/news/uganda-s-gold-discovery-what-it-could-mean-for-crypto,article:published_time 2022-06-24T15:50:00.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2022-08-18 05:59:00,https://cointelegraph.com/news/aussie-asset-manager-to-offer-crypto-etf-using-unique-license-variation,article:published_time 2022-08-18T06:59:56.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2023-05-25 04:07:00,https://cointelegraph.com/news/gaming-opportunity-crypto-mass-adoption-polygon-sandeep-nailwal,article:published_time 2023-05-25T05:07:27.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2024-05-09 09:05:00,https://cointelegraph.com/news/bitcoin-mining-difficulty-dip-since-2022-btc-price-60k,article:published_time 2024-05-09T10:05:00.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2024-07-12 07:53:00,https://cointelegraph.com/news/uk-law-commission-dao-legal-reforms,article:published_time 2024-07-12T08:53:43.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2024-08-08 19:17:00,https://cointelegraph.com/news/russia-legalizes-bitcoin-cryptocurrency-mining,article:published_time 2024-08-08T20:17:44.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2025-05-06 18:44:00,https://cointelegraph.com/news/bitcoin-bulls-rush-into-long-positions-ahead-of-may-7-fed-fomc-interest-rate-decision,article:published_time 2025-05-06T19:44:30.000Z,,ok_site_meta_plus_1h_in_bst
+cointelegraph.com,2020-02-25 10:35:00,https://cointelegraph.com/news/crypto-friendly-banking-app-now-one-of-europes-most-valuable-fintechs,article:published_time 2020-02-25T10:35:00.000Z,,ok
+cointelegraph.com,2022-03-03 09:03:00,https://cointelegraph.com/news/nifty-news-marketplace-exploit-on-smol-brains-nft-for-trees-and-metaverse-movies,article:published_time 2022-03-03T09:03:33.000Z,,ok_seconds_truncated
+cointelegraph.com,2023-02-10 04:58:00,https://cointelegraph.com/news/bitcoin-price-more-correlated-to-ftx-developments-than-macro-events-research,article:published_time 2023-02-10T04:58:16.000Z,,ok_seconds_truncated
+cointelegraph.com,2024-11-15 08:00:00,https://cointelegraph.com/news/don-t-be-delusional-decentralization-doesn-t-compensate-for-regulation,article:published_time 2024-11-15T08:00:00.000Z,,ok
+cointelegraph.com,2025-03-25 13:30:00,https://cointelegraph.com/news/eth-price-1-2-k-ethereum-pos-deflation-fees-all-time-lows,article:published_time 2025-03-25T13:30:00.000Z,,ok
+cointelegraph.com,,https://cointelegraph.com/news/bitcoin-miner-monthly-revenue-11-month-low,article:published_time 2024-09-02T04:48:19.000Z,"CryptoPanic 19857581: CoinTelegraph Sep 02, 2024 03:48 UTC",control_site_meta_plus_1h_in_bst
+cointelegraph.com,,https://cointelegraph.com/news/bitcoin-price-loses-traction-as-miner-profits-drop-and-etf-outflows,article:published_time 2024-09-03T22:20:00.000Z,"CryptoPanic 19864595: CoinTelegraph Sep 03, 2024 21:20 UTC",control_site_meta_plus_1h_in_bst
+cointelegraph.com,,https://cointelegraph.com/news/polygon-agglayer-unify-web3-blockchain,article:published_time 2024-09-05T08:02:00.000Z,"CryptoPanic 19870049: CoinTelegraph Sep 05, 2024 07:02 UTC",control_site_meta_plus_1h_in_bst
+cointelegraph.com,,https://cointelegraph.com/news/australian-crypto-investors-sidelined-clear-crypto-laws-swyftx,article:published_time 2024-09-11T07:25:45.000Z,"CryptoPanic 19889758: CoinTelegraph Sep 11, 2024 06:25 UTC",control_site_meta_plus_1h_in_bst
+cryptonews.com,2023-06-26 10:53:54,https://cryptonews.com/news/bitcoin-to-sub-20000-next-heres-what-options-markets-say-about-the-btc-price-outlook/,article:published_time 2023-03-07T21:01:00+00:00; modified 2023-06-26T10:53:54,,modified_time_batch_upload
+cryptonews.com,2023-10-23 11:48:17,https://cryptonews.com/news/mastercards-nft-product-lead-resigns-leaves-behind-surprising-farewell-gift/,article:published_time 2023-02-03T10:10:00+00:00; modified 2023-10-23T11:48:17,,modified_time_batch_upload
+cryptonews.com,2024-05-06 22:49:55,https://cryptonews.com/news/kenya-appoints-marathon-digital-as-consultant-for-cryptocurrency-regime-and-mining-energy-needs/,article:published_time 2024-05-06T22:49:55+00:00,,ok
+cryptonews.com,2024-10-09 14:39:03,https://cryptonews.com/news/dogecoin-price-outlook-open-interest-drops-by-458m-is-doges-bullish-momentum-over/,article:published_time 2024-10-09T14:39:03+00:00,,ok
+cryptonews.com,2025-02-21 14:53:09,https://cryptonews.com/news/elon-musk-to-back-cardano-hoskinson-hints-at-us-adoption-plan/,article:published_time 2025-02-21T14:53:09+00:00,,ok
+cryptonews.com,2025-05-27 10:29:38,https://cryptonews.com/news/btc-holds-steady-near-110k-as-traders-brace-for-bitcoin-conference-headlines-qcp/,article:published_time 2025-05-27T10:29:38+00:00,,ok
+cryptopanic.com,2017-08-24 03:04:31,https://cryptopanic.com/news/14745/MGT-Capital-Raises-24-Million-to-Expand-Bitcoin-Mining-Operation,"CoinDesk Aug 23, 2017 21:04 UTC",,shifted_plus_6h
+cryptopanic.com,2019-06-10 14:24:14,https://cryptopanic.com/news/5667264/post-5667264,"Forklog Jun 10, 2019 08:24 UTC",ForkLog article:published_time 2019-06-10T11:24:14+03:00,shifted_plus_6h
+cryptopanic.com,2020-11-10 01:00:19,https://cryptopanic.com/news/10489236/Cette-crypto-banque-pretait-du-Bitcoin-elle-fait-faillite-et-tout-nest-pas-tres-clair,"journalducoin Nov 09, 2020 19:00 UTC",Journal du Coin article:published_time 2020-11-09T19:00:19+00:00,shifted_plus_6h
+cryptopanic.com,2017-10-07 01:40:45,https://cryptopanic.com/news/151489/Russia-Blasts-Decision-to-Extradite-Alleged-Bitcoin-Money-Launderer,"CoinDesk Oct 06, 2017 19:40 UTC",,shifted_plus_6h
+cryptopanic.com,2018-09-04 22:19:20,https://cryptopanic.com/news/3016327/Lightning-Casa,"Forklog Sep 04, 2018 16:19 UTC",ForkLog article:published_time 2018-09-04T19:19:20+03:00,shifted_plus_6h
+cryptopanic.com,2018-11-01 00:09:48,https://cryptopanic.com/news/3525104/Ernst-Young-Ethereum,"Forklog Oct 31, 2018 18:09 UTC",ForkLog article:published_time 2018-10-31T20:09:48+03:00,shifted_plus_6h
+cryptopanic.com,2019-02-21 17:00:13,https://cryptopanic.com/news/4628199/Bitcoin-Ether-and-XRP-Weekly-Market-Update-February-21-2019,"Crypto.news Feb 21, 2019 11:00 UTC",,shifted_plus_6h
+cryptopanic.com,2019-05-22 00:05:46,https://cryptopanic.com/news/5490507/Around-The-Block-With-Jeff-And-Dave-Our-First-Podcast,"Crypto.news May 21, 2019 18:05 UTC",,shifted_plus_6h
+cryptopanic.com,2019-07-23 00:02:59,https://cryptopanic.com/news/6102545/Bitcoin-peer-to-peer-trading-is-on-the-rise-says-new-report,"Decrypt Jul 22, 2019 18:02 UTC",Decrypt article:published_time 2019-07-22T18:02:59,shifted_plus_6h
+cryptopanic.com,2020-01-21 09:53:15,https://cryptopanic.com/news/7704743/XRP-Liquidity-Index-on-Bitso-Hits-Another-ATH-Will-MoneyGram-Set-Corridor-to-UAE,"U.Today Jan 21, 2020 09:53 UTC",U.Today article:published_time 2020-01-21T09:53:15+0000,ok
+cryptopanic.com,2020-04-24 01:56:00,https://cryptopanic.com/news/8579976/TOP-3-Bitcoin-and-Crypto-News-for-Today-23-April,"U.Today Apr 24, 2020 01:56 UTC",U.Today article:published_time 2020-04-24T01:56:00+0000,ok
+cryptopanic.com,2020-07-06 13:19:07,https://cryptopanic.com/news/9273909/Altana-Digital-CIO-Reveals-Biggest-Threats-to-Bitcoin,"U.Today Jul 06, 2020 07:19 UTC",U.Today article:published_time 2020-07-06T07:19:07+0000,shifted_plus_6h
+cryptopanic.com,2020-11-06 22:01:03,https://cryptopanic.com/news/10464298/The-10-Public-Companies-With-the-Biggest-Bitcoin-Portfolios,"Decrypt Nov 06, 2020 16:01 UTC",,shifted_plus_6h
+decrypt.co,2021-03-23 11:35:44,https://decrypt.co/62509/will-grayscale-convert-gbtc-to-a-bitcoin-etf,article:published_time 2021-03-23T11:35:44,,ok
+decrypt.co,2021-10-13 09:21:57,https://decrypt.co/83284/binance-delist-chinese-yuan-block-crypto-traders-mainland-china,article:published_time 2021-10-13T09:21:57,,ok
+decrypt.co,2022-06-11 14:13:32,https://decrypt.co/102635/where-is-terras-market-share-going-ethereum-bnb-chain-and-tron,article:published_time 2022-06-11T14:13:32,,ok
+decrypt.co,2023-12-08 17:16:02,https://decrypt.co/209113/novel-wallet-is-a-book-that-hides-your-bitcoin,article:published_time 2023-12-08T17:16:02,,ok
+decrypt.co,2024-10-09 19:37:00,https://decrypt.co/285491/argentina-stablecoin-use-booms-inflation,article:published_time 2024-10-09T19:37:00,,ok
+decrypt.co,2025-05-08 15:44:55,https://decrypt.co/318571/kuwait-escalates-illegal-crypto-mining-crackdown-questioning-116,article:published_time 2025-05-08T15:44:55,,ok

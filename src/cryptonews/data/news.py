@@ -119,21 +119,46 @@ def imprecise_mask(frame: pd.DataFrame, column: str = "published_utc") -> pd.Ser
     return mask
 
 
-def shared_timestamp_groups(frame: pd.DataFrame, min_records: int = 10,
-                            column: str = "published_utc") -> pd.DataFrame:
-    """Группы записей одного источника с одинаковым временем публикации до секунды.
+def batch_uploads(frame: pd.DataFrame, min_records: int = 10, max_gap_seconds: float = 60.0,
+                  column: str = "published_utc") -> tuple[pd.Series, pd.DataFrame]:
+    """Пакетные загрузки: серии из min_records и более записей одного источника, в которых
+    каждая следующая запись отстоит от предыдущей меньше чем на max_gap_seconds.
 
-    Десять и больше материалов одного сайта с одной и той же секундой — это не время
-    публикации, а время загрузки архива: настоящие моменты выхода таких новостей неизвестны."""
-    sizes = frame.groupby(["source", column]).size().rename("Записей").reset_index()
-    groups = sizes[sizes["Записей"] >= min_records].sort_values("Записей", ascending=False)
-    return groups.reset_index(drop=True)
+    Редакция не выпускает десять материалов подряд с промежутками меньше минуты (обычный темп
+    источника в наших данных — около новости в час). Так выглядят загрузка архива и массовое
+    пересохранение материалов на сайте: время у таких записей — момент загрузки, настоящее
+    время публикации неизвестно. Частный случай — десять и больше записей с одной секундой.
+
+    Возвращает маску записей (по индексу frame) и таблицу серий."""
+    times = pd.to_datetime(frame[column], utc=True)
+    seconds = ((times - pd.Timestamp("1970-01-01", tz="UTC")) / pd.Timedelta(seconds=1)).to_numpy(float)
+    titles = frame["title"].to_numpy() if "title" in frame else np.full(len(frame), None)
+    flags = np.zeros(len(frame), dtype=bool)
+    rows = []
+    for source, positions in frame.groupby("source", sort=True).indices.items():
+        positions = positions[~np.isnan(seconds[positions])]
+        if len(positions) < min_records:
+            continue
+        order = positions[np.argsort(seconds[positions], kind="stable")]
+        run = np.concatenate([[0], np.cumsum(np.diff(seconds[order]) >= max_gap_seconds)])
+        sizes = np.bincount(run)
+        for run_id in np.flatnonzero(sizes >= min_records):
+            members = order[run == run_id]
+            flags[members] = True
+            rows.append({"Источник": source, "Первая метка": times.iloc[members[0]],
+                         "Последняя метка": times.iloc[members[-1]], "Записей": int(len(members)),
+                         "Пример заголовка": titles[members[0]]})
+    table = pd.DataFrame(rows, columns=["Источник", "Первая метка", "Последняя метка", "Записей", "Пример заголовка"])
+    table = table.sort_values(["Записей", "Первая метка"], ascending=[False, True]).reset_index(drop=True)
+    return pd.Series(flags, index=frame.index, name="batch_upload"), table
 
 
-def shared_timestamp_mask(frame: pd.DataFrame, min_records: int = 10, column: str = "published_utc") -> pd.Series:
-    """True у записей из групп shared_timestamp_groups."""
-    size = frame.groupby(["source", column])[column].transform("size")
-    return size >= min_records
+def drop_sources(frame: pd.DataFrame, sources) -> tuple[pd.DataFrame, pd.Series]:
+    """Убирает записи источников из списка; возвращает таблицу и число убранных по источникам."""
+    sources = list(sources or [])
+    mask = frame["source"].isin(sources).to_numpy()
+    counts = frame.loc[mask, "source"].value_counts().reindex(sources, fill_value=0)
+    return frame[~mask].reset_index(drop=True), counts
 
 
 def clean_utc(frame: pd.DataFrame, dedup_window_hours: int = 24,

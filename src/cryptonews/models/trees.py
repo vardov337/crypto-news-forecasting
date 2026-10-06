@@ -2,8 +2,10 @@
 
 Обе модели строятся средствами XGBoost и считаются на видеокарте, если она есть.
 
-Random Forest — режим случайного леса XGBoost (XGBRFRegressor): параллельные деревья,
-каждое на случайной подвыборке 63,2% строк (как доля уникальных строк в бутстрепе),
+Random Forest — режим случайного леса XGBoost: один шаг бустинга из num_parallel_tree
+параллельных деревьев с шагом 1 (прогноз — среднее деревьев; так XGBoost рекомендует строить
+лес вместо устаревшей обёртки XGBRFRegressor). Каждое дерево — на случайной подвыборке
+63,2% строк (как доля уникальных строк в бутстрепе),
 в каждом узле — случайная доля признаков (sqrt — √k из k), без сжатия и регуляризации,
 min_child_weight для квадратичной потери равен минимальному числу строк в листе.
 Отличие от RandomForestRegressor из scikit-learn — гистограммные разбиения; на
@@ -62,8 +64,9 @@ class RandomForest:
         # без ограничения глубины: рост по листьям; 4096 листьев недостижимы при min_child_weight ≥ 50
         growth = ({"max_depth": int(depth)} if depth is not None
                   else {"max_depth": 0, "grow_policy": "lossguide", "max_leaves": 4096})
-        model = xgb.XGBRFRegressor(
-            n_estimators=int(params["n_estimators"]), min_child_weight=float(params["min_samples_leaf"]),
+        model = xgb.XGBRegressor(
+            n_estimators=1, num_parallel_tree=int(params["n_estimators"]),
+            min_child_weight=float(params["min_samples_leaf"]),
             colsample_bynode=column_fraction(params["max_features"], X.shape[1]), subsample=0.632,
             learning_rate=1.0, reg_lambda=0.0, tree_method="hist", device=self.device,
             random_state=int(seed), n_jobs=-1, **growth)

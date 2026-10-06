@@ -2,14 +2,15 @@
 
 Что делает скрипт:
   1. берёт модели тональности, выбранные шагом 5b (results/metrics/sentiment_choice.json),
-     и их оценки для каждой новости;
+     и их оценки для каждой новости; убирает источники с ненадёжным временем публикации и записи
+     пакетных загрузок (PROTOCOL.md, разделы 2 и 12);
   2. для каждого актива отбирает новости: упоминающие актив и общерыночные (без упоминания
      биткоина и эфира), отдельно для английских и русских новостей;
   3. относит новость к часу t, если t ≤ τ < t + 1 ч, и считает почасовые величины;
   4. строит ценовые и новостные признаки (PROTOCOL.md, раздел 4) и целевую переменную —
      доходность следующего часа; строки с пропусками из-за остановок биржи помечаются;
-  5. выполняет встроенные проверки: возрастание времени, скачки цели больше 20% за час,
-     правильность отнесения новостей к часам;
+  5. выполняет встроенные проверки: возрастание времени, скачок цены больше 50% за час
+     (остановка; больше 15% — в отчёт), правильность отнесения новостей к часам;
   6. сохраняет data/processed/features_<актив>.parquet, схему проверки results/splits.json
      и сводки в results/.
 
@@ -33,6 +34,7 @@ LANGUAGES = ("en", "ru")
 def load_scored_news(cfg: dict, log) -> tuple[dict, dict, dict]:
     """Новости каждого языка с оценками модели, выбранной шагом 5b."""
     data_dir, results_dir = cfg["paths"]["data_dir"], cfg["paths"]["results_dir"]
+    (results_dir / "tables").mkdir(parents=True, exist_ok=True)
     choice_path = results_dir / "metrics" / "sentiment_choice.json"
     if not choice_path.exists():
         raise SystemExit(f"Нет {choice_path} — сначала выполните шаг 5b (05b_choose_sentiment.py)")
@@ -50,24 +52,35 @@ def load_scored_news(cfg: dict, log) -> tuple[dict, dict, dict]:
         merged = frame.merge(scores, on="url", how="inner", validate="one_to_one")
         if len(merged) != len(frame):
             raise SystemExit(f"[{lang}] оценки тональности есть не для всех новостей: {len(merged)} из {len(frame)}")
-        min_records = int(cfg["data"].get("time_precision", {}).get("shared_timestamp_min_records", 10))
-        groups = news_rules.shared_timestamp_groups(merged, min_records)
-        shared = news_rules.shared_timestamp_mask(merged, min_records)
-        groups.to_csv(cfg["paths"]["results_dir"] / "tables" / f"shared_timestamps_{lang}.csv",
-                      index=False, encoding="utf-8")
-        if shared.any():
-            log.info("[%s] не идут в признаки %d записей с общей меткой времени (%d групп по %d и больше "
-                     "материалов одного источника с одной секундой):\n%s", lang, int(shared.sum()), len(groups),
-                     min_records, groups.head(10).to_string(index=False))
+        merged, dropped = news_rules.drop_sources(merged, cfg["data"].get("feature_excluded_sources"))
+        if dropped.sum():
+            log.info("[%s] не идут в признаки источники с ненадёжным временем публикации (раздел 12 протокола): %s",
+                     lang, ", ".join(f"{src} — {n} зап." for src, n in dropped.items() if n))
+        b_cfg = cfg["data"].get("batch_uploads", {})
+        min_records, max_gap = int(b_cfg.get("min_records", 10)), float(b_cfg.get("max_gap_seconds", 60))
+        batch, series = news_rules.batch_uploads(merged, min_records, max_gap)
+        series.to_csv(results_dir / "tables" / f"batch_uploads_{lang}.csv", index=False, encoding="utf-8")
+        if batch.any():
+            by_source = series.groupby("Источник")["Записей"].agg(["size", "sum"])
+            log.info("[%s] не идут в признаки записи пакетных загрузок: %d шт., серий — %d (серия — от %d записей "
+                     "одного источника с промежутками меньше %g с); по источникам: %s. Крупнейшие серии:\n%s",
+                     lang, int(batch.sum()), len(series), min_records, max_gap,
+                     "; ".join(f"{src} — {row['sum']} зап., серий {row['size']}" for src, row in by_source.iterrows()),
+                     series.head(10).to_string(index=False, max_colwidth=60))
         else:
-            log.info("[%s] групп записей с общей меткой времени нет", lang)
-        merged = merged[~shared].reset_index(drop=True)
-        busiest = align.hour_of(merged["published_utc"]).value_counts().head(5)
+            log.info("[%s] пакетных загрузок нет", lang)
+        merged = merged[~batch.to_numpy()].reset_index(drop=True)
+        hours = align.hour_of(merged["published_utc"])
+        busiest = hours.value_counts().head(5)
         log.info("[%s] часы с наибольшим числом новостей: %s", lang,
                  ", ".join(f"{hour:%Y-%m-%d %H:%M} — {count}" for hour, count in busiest.items()))
+        per_source = merged.groupby([merged["source"], hours]).size().sort_values(ascending=False).head(5)
+        log.info("[%s] больше всего новостей одного источника за час: %s", lang,
+                 ", ".join(f"{src} {hour:%Y-%m-%d %H:%M} — {count}" for (src, hour), count in per_source.items()))
         news[lang] = merged
         inputs[lang] = {"news": str(news_path), "news_sha256": sha256_file(news_path),
-                        "shared_timestamp_records_excluded": int(shared.sum()),
+                        "batch_upload_records_excluded": int(batch.sum()), "batch_upload_series": int(len(series)),
+                        "excluded_sources": {src: int(n) for src, n in dropped.items()},
                         "scores": str(scores_path), "scores_sha256": sha256_file(scores_path)}
         chosen[lang] = {"model": choice[lang]["model"], "revision": choice[lang]["revision"]}
         log.info("[%s] модель тональности: %s (ревизия %s), новостей с оценками: %d",

@@ -181,15 +181,35 @@ def test_diagnostics_catch_bad_data():
         diagnostics.check_news_alignment(pd.Series(pd.to_datetime(["2024-01-01 11:00"], utc=True)), published)
 
 
-def test_shared_timestamps_are_detected_per_source():
+def test_batch_uploads_are_detected_per_source():
     from cryptonews.data import news as news_rules
 
-    bulk = pd.Timestamp("2019-04-17 13:00:00", tz="UTC")
+    t0 = pd.Timestamp("2023-10-23 08:00:00", tz="UTC")
+    spread = [t0 + pd.Timedelta(seconds=15 * i) for i in range(30)]           # загрузка архива: 30 записей через 15 с
+    same = [pd.Timestamp("2019-04-17 13:00:00", tz="UTC")] * 12                # 12 записей с одной секундой
+    short = [pd.Timestamp("2020-01-01 10:00", tz="UTC") + pd.Timedelta(seconds=20 * i) for i in range(9)]  # 9 < 10
+    split = ([pd.Timestamp("2021-01-01", tz="UTC") + pd.Timedelta(seconds=30 * i) for i in range(9)]
+             + [pd.Timestamp("2021-01-01 00:10", tz="UTC") + pd.Timedelta(seconds=30 * i) for i in range(11)])
+    hourly = list(pd.date_range("2019-05-01", periods=24, freq="h", tz="UTC"))
+    other = [t0 + pd.Timedelta(seconds=15 * i + 5) for i in range(5)]          # другой источник в те же минуты
     frame = pd.DataFrame({
-        "published_utc": [bulk] * 12 + [bulk] * 3 + list(pd.date_range("2019-05-01", periods=5, freq="h", tz="UTC")),
-        "source": ["a.com"] * 12 + ["b.com"] * 3 + ["a.com"] * 5,
+        "published_utc": spread + same + short + split + hourly + other,
+        "source": ["a.com"] * 51 + ["c.com"] * 20 + ["a.com"] * 24 + ["b.com"] * 5,
     })
-    groups = news_rules.shared_timestamp_groups(frame, 10)
-    assert len(groups) == 1 and groups.loc[0, "source"] == "a.com" and groups.loc[0, "Записей"] == 12
-    mask = news_rules.shared_timestamp_mask(frame, 10)
-    assert int(mask.sum()) == 12 and not mask.iloc[12:15].any()
+    frame["title"] = [f"t{i}" for i in range(len(frame))]
+    frame = frame.sample(frac=1, random_state=0)                               # порядок строк не важен
+    mask, series = news_rules.batch_uploads(frame, 10, 60)
+    expected = {f"t{i}" for i in range(42)} | {f"t{i}" for i in range(60, 71)}  # 30 + 12 у a.com, 11 у c.com
+    assert set(frame.loc[mask, "title"]) == expected
+    assert series["Записей"].tolist() == [30, 12, 11]
+    assert (series["Последняя метка"] >= series["Первая метка"]).all()
+
+
+def test_drop_sources():
+    from cryptonews.data import news as news_rules
+
+    frame = pd.DataFrame({"source": ["cryptopanic.com", "decrypt.co", "cryptopanic.com"], "title": ["a", "b", "c"]})
+    kept, counts = news_rules.drop_sources(frame, ["cryptopanic.com", "nowhere.org"])
+    assert kept["title"].tolist() == ["b"] and counts.to_dict() == {"cryptopanic.com": 2, "nowhere.org": 0}
+    same, none = news_rules.drop_sources(frame, None)
+    assert len(same) == 3 and none.empty
