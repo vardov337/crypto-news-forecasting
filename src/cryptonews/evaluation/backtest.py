@@ -47,7 +47,8 @@ def summarize(net, gross, turnover, position, periods_per_year: float) -> dict:
     """Метрики стратегии: итоговая и годовая доходность, годовая волатильность, Шарп, Сортино
     (нижнее отклонение по всем часам), максимальная просадка, оборот, доля часов в рынке и
     безубыточные издержки — уровень, при котором средняя чистая доходность равна нулю
-    (средняя валовая доходность / средний оборот; отрицательный — убыточна и без издержек)."""
+    (средняя валовая доходность / средний оборот; отрицательный — убыточна и без издержек;
+    у стратегии с единственным входом — NaN)."""
     net, gross, turnover = (np.asarray(v, float) for v in (net, gross, turnover))
     n = len(net)
     years = n / periods_per_year
@@ -66,7 +67,9 @@ def summarize(net, gross, turnover, position, periods_per_year: float) -> dict:
         "max_drawdown": max_drawdown(net),
         "turnover_per_year": float(np.sum(turnover)) / years,
         "time_in_market": float(np.mean(np.asarray(position, float) != 0)),
-        "breakeven_cost_bp": float(np.mean(gross)) / mean_turnover * 1e4 if mean_turnover > 0 else float("nan"),
+        # при единственном входе в начале теста (buy-and-hold) показатель смысла не имеет
+        "breakeven_cost_bp": (float(np.mean(gross)) / mean_turnover * 1e4 if float(np.sum(turnover)) > 1
+                              else float("nan")),
     }
 
 

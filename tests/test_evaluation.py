@@ -100,6 +100,7 @@ def test_backtest_costs_and_metrics():
     assert short["time_in_market"] == 1.0 and summary["time_in_market"] == 0.75
     hold, _ = backtest.evaluate(np.ones(4), log_returns, "buy_and_hold", 10, periods_per_year=8760)
     assert hold["turnover_per_year"] == pytest.approx(8760 / 4)        # один вход за весь тест
+    assert np.isnan(hold["breakeven_cost_bp"])
 
 
 def test_hac_wald_and_granger():

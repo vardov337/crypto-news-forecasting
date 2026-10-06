@@ -23,27 +23,15 @@ from cryptonews.cli import parse_args
 from cryptonews.config import load_config
 from cryptonews.evaluation import backtest, metrics
 from cryptonews.evaluation import tests as stat_tests
+from cryptonews.evaluation.predictions import (BASELINES, MEAN, ZERO, collect_all, combine, combined_path,
+                                                key_of, label)
 from cryptonews.features import TARGET
 from cryptonews.models import run
 from cryptonews.utils import get_logger, run_manifest, save_json, set_seed
 
-PRETTY = {"naive_zero": "Нулевой прогноз", "naive_mean": "Историческое среднее", "arima": "ARIMA",
-          "arimax": "ARIMAX", "random_forest": "Random Forest", "xgboost": "XGBoost", "lstm": "LSTM"}
-BASELINES = tuple(run.FAMILIES["baselines"])
-ZERO, MEAN = "naive_zero:none", "naive_mean:none"
-
 
 def add_arguments(parser) -> None:
     parser.add_argument("--assets", nargs="*", default=None, help="активы, например BTCUSDT (по умолчанию все)")
-
-
-def key_of(model: str, feature_set: str) -> str:
-    return f"{model}:{feature_set}"
-
-
-def label(key: str) -> str:
-    model, feature_set = key.split(":")
-    return PRETTY[model] if feature_set == run.NO_FEATURES else f"{PRETTY[model]} {feature_set}"
 
 
 def set_roles(cfg: dict) -> dict:
@@ -53,24 +41,6 @@ def set_roles(cfg: dict) -> dict:
     price = find({"price"})
     return {"price": price, "en": find({"price", "en"}), "all": find({"price", "en", "ru"}),
             "news": [s for s in sets if s != price]}
-
-
-def load_predictions(cfg: dict, out_dir, symbol: str, n_folds: int, log) -> tuple[dict, list]:
-    found, missing = {}, []
-    for family in run.FAMILIES.values():
-        for model in family:
-            for feature_set in run.feature_sets(cfg, model):
-                frame = run.collect(out_dir, symbol, model, feature_set, n_folds)
-                if frame is None:
-                    missing.append(key_of(model, feature_set))
-                else:
-                    found[key_of(model, feature_set)] = frame
-    for key in (ZERO, MEAN):
-        if key not in found:
-            raise SystemExit(f"[{symbol}] нет прогнозов {label(key)} — сначала выполните шаг 7 (группа baselines)")
-    if missing:
-        log.warning("[%s] не посчитаны до конца (в оценку не идут): %s", symbol, ", ".join(label(k) for k in missing))
-    return found, missing
 
 
 def check_dates(splits: dict, out_dir, symbol: str, log) -> None:
@@ -247,15 +217,15 @@ def main() -> None:
 
     for symbol in symbols:
         check_dates(splits, out_dir, symbol, log)
-        found, missing = load_predictions(cfg, out_dir, symbol, len(splits["folds"]), log)
-        rows = metrics.common_rows(found)
-        truth = found[ZERO].loc[rows, "y_true"]
-        for key, frame in found.items():
-            if not np.allclose(frame.loc[rows, "y_true"].to_numpy(), truth.to_numpy(), rtol=0, atol=1e-12):
-                raise SystemExit(f"[{symbol}] у {label(key)} другая целевая переменная — прогнозы посчитаны по разным данным")
-        y = truth.to_numpy(float)
-        preds = {key: frame.loc[rows, "y_pred"].to_numpy(float) for key, frame in found.items()}
+        found, missing = collect_all(cfg, out_dir, symbol, len(splits["folds"]))
+        if missing:
+            log.warning("[%s] не посчитаны до конца (в оценку не идут): %s", symbol, ", ".join(label(k) for k in missing))
+        combined = combine(found)
+        combined.to_parquet(combined_path(results_dir, symbol))      # одна таблица прогнозов для шага 9 и архива
+        rows, truth = combined.index, combined["y_true"]
         keys = list(found)
+        y = truth.to_numpy(float)
+        preds = {key: combined[key].to_numpy(float) for key in keys}
         log.info("[%s] моделей в оценке: %d; общих строк теста: %d (у отдельных моделей до %d)", symbol, len(keys),
                  len(rows), max(len(f) for f in found.values()))
 
