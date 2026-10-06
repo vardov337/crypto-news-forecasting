@@ -2,7 +2,7 @@
 
 Собирает в results/report/ всё, что идёт в статью, прямо из результатов шагов 5б–8б —
 вручную ни одно число не переносится (PROTOCOL.md, раздел 11):
-  tables.xlsx     — таблицы статьи (Т1–Т5) и приложения (П1–П7); лист «Описание» — что где;
+  tables.xlsx     — таблицы статьи (Т1–Т5) и приложения (П1–П9); лист «Описание» — что где;
   fig1_strategies — стоимость портфеля: buy-and-hold и лучшая по Шарпу стратегия без издержек и с ними;
   fig2_breakeven  — безубыточные издержки и число смен позиции в год;
   fig3_accuracy   — изменение RMSE относительно нулевого прогноза, %;
@@ -20,9 +20,10 @@ import zipfile
 import numpy as np
 import pandas as pd
 
-from cryptonews import report, validation
+from cryptonews import align, report, validation
 from cryptonews.cli import parse_args
 from cryptonews.config import load_config
+from cryptonews.data import news as news_rules
 from cryptonews.evaluation import backtest
 from cryptonews.evaluation.predictions import all_keys, collect_all, combine, combined_path, is_baseline, label
 from cryptonews.utils import get_logger, run_manifest, save_json
@@ -153,6 +154,21 @@ def costs_table(frames: dict, costs: list, primary: float) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def selection_table(frames: dict) -> pd.DataFrame:
+    rows = []
+    for symbol, table in frames.items():
+        for r in table.itertuples():
+            rows.append({"Актив": symbol, "Модель": r.label,
+                         "Значимо точнее нуля или угадывает направление (Холм, 5%)": yes_no(r.accurate),
+                         "Шарп": round(r.sharpe, 2) if pd.notna(r.sharpe) else None,
+                         "Разница с buy-and-hold": round(r.sharpe_diff, 2) if pd.notna(r.sharpe_diff) else None,
+                         "95% ДИ: от": round(r.ci_low, 2) if pd.notna(r.ci_low) else None,
+                         "до": round(r.ci_high, 2) if pd.notna(r.ci_high) else None,
+                         "Нижняя граница ДИ > 0": yes_no(r.beats_hold), "Проходит критерий": yes_no(r.passes),
+                         "Названа лучшей": yes_no(r.selected)})
+    return pd.DataFrame(rows)
+
+
 def folds_table(frames: dict) -> pd.DataFrame:
     parts = []
     for symbol, table in frames.items():
@@ -223,6 +239,97 @@ def hyperparameter_tables(cfg: dict, results_dir, symbols: list, n_folds: int) -
                 order = json.loads(path.read_text(encoding="utf-8"))["info"]["order"]
                 orders.append({"Актив": symbol, "Фолд": i, "Порядок ARIMA (p, d, q)": f"({order[0]}, {order[1]}, {order[2]})"})
     return pd.DataFrame(tuned), pd.DataFrame(orders)
+
+
+def data_flow_tables(cfg: dict, features_report: dict, splits: dict, symbols: list, combined: dict,
+                     log) -> list[tuple[str, pd.DataFrame]]:
+    """Схема данных для статьи: число записей после каждого этапа очистки и отбора новостей,
+    привязка к монетам, часы с новостями (вся выборка и тест), объём обучения и теста по фолдам.
+
+    Новости пересчитываются теми же правилами, что и в шаге 6 (исключённые источники, пакетные
+    загрузки, период выборки, отбор новостей актива), — только чтение, файлы не меняются."""
+    data_dir, results_dir = cfg["paths"]["data_dir"], cfg["paths"]["results_dir"]
+    period = features_report["period"]
+    start, end = pd.Timestamp(period["start_inclusive"]), pd.Timestamp(period["end_exclusive"])
+    rule = cfg["features"]["news"].get("asset_rule", "coin_or_market_wide")
+    b_cfg = cfg["data"].get("batch_uploads", {})
+    flow, coins_rows = [], []
+    for lang in ("en", "ru"):
+        steps = []
+        stages_path = results_dir / "tables" / f"cleaning_news_{lang}.csv"
+        if stages_path.exists():
+            stages = pd.read_csv(stages_path)
+            steps += [(str(stage), int(count)) for stage, count in zip(stages.iloc[:, 0], stages.iloc[:, 1])]
+        news_path = data_dir / "interim" / f"news_{lang}.parquet"
+        if not news_path.exists():
+            log.warning("Нет %s — этапы отбора новостей (%s) в таблицу П8 не попадут", news_path, lang)
+            flow += [{"Язык": LANGUAGE[lang], "Этап": s, "Записей": n} for s, n in steps]
+            continue
+        news = pd.read_parquet(news_path)
+        news["published_utc"] = pd.to_datetime(news["published_utc"], utc=True)
+        if steps and steps[-1][1] != len(news):
+            log.warning("[%s] в таблице очистки %d записей, а в %s — %d", lang, steps[-1][1], news_path.name, len(news))
+        news, dropped = news_rules.drop_sources(news, cfg["data"].get("feature_excluded_sources"))
+        if dropped.sum():
+            steps.append((f"Без источников с ненадёжным временем публикации ({', '.join(dropped[dropped > 0].index)})",
+                          len(news)))
+        batch, _ = news_rules.batch_uploads(news, int(b_cfg.get("min_records", 10)),
+                                            float(b_cfg.get("max_gap_seconds", 60)))
+        news = news[~batch.to_numpy()]
+        steps.append(("Без пакетных загрузок", len(news)))
+        inside = news[(news["published_utc"] >= start) & (news["published_utc"] < end)]
+        steps.append((f"В периоде выборки ({start:%d.%m.%Y} – {end - pd.Timedelta(hours=1):%d.%m.%Y})", len(inside)))
+        rows = [{"Язык": LANGUAGE[lang], "Этап": s, "Записей": n,
+                 "Убрано на этапе": (steps[i - 1][1] - n) if i else None} for i, (s, n) in enumerate(steps)]
+        for symbol in symbols:
+            rows.append({"Язык": LANGUAGE[lang], "Этап": f"Идут в признаки {symbol} (упоминают монету или общерыночные)",
+                         "Записей": len(align.news_for_asset(inside, symbol, rule)), "Убрано на этапе": None})
+        flow += rows
+        btc, eth = inside["mentions_btc"].astype(bool), inside["mentions_eth"].astype(bool)
+        coins_rows.append({"Язык": LANGUAGE[lang], "Только биткоин": int((btc & ~eth).sum()),
+                           "Только эфир": int((eth & ~btc).sum()), "Обе монеты": int((btc & eth).sum()),
+                           "Ни одной (общерыночные)": int((~btc & ~eth).sum()), "Всего": len(inside)})
+
+    test_start, test_end = splits["folds"][0].test_start, splits["folds"][-1].test_end
+    hours_rows, valid_index = [], {}
+    for symbol in symbols:
+        path = data_dir / "processed" / f"features_{symbol}.parquet"
+        if not path.exists():
+            log.warning("Нет %s — часовые ряды и фолды в таблицу П8 не попадут", path)
+            continue
+        table = pd.read_parquet(path, columns=["valid", "en_news_count", "ru_news_count"])
+        valid = table["valid"].astype(bool)
+        valid_index[symbol] = table.index[valid]
+        test = (table.index >= test_start) & (table.index < test_end)
+        row = {"Актив": symbol, "Часов в выборке": len(table), "Пригодных": int(valid.sum()),
+               "Часов в тесте": int(test.sum()), "Пригодных в тесте": int((valid & test).sum()),
+               "Строк теста, общих для всех моделей": len(combined[symbol]) if symbol in combined else None}
+        for lang in ("en", "ru"):
+            has = table[f"{lang}_news_count"] > 0
+            row[f"Часов с новостями, %: {LANGUAGE[lang]}, вся выборка"] = round(100 * float(has.mean()), 1)
+            row[f"Часов с новостями, %: {LANGUAGE[lang]}, тест"] = round(100 * float(has[test].mean()), 1)
+            row[f"Новостей в час, среднее: {LANGUAGE[lang]}, тест"] = round(float(table.loc[test, f"{lang}_news_count"].mean()), 2)
+        hours_rows.append(row)
+
+    fold_rows = []
+    windows = [("настройка", splits["tuning"])] + [(str(i), f) for i, f in enumerate(splits["folds"], 1)]
+    for name, window in windows:
+        row = {"Окно": name, "Обучение: строки до (UTC)": f"{window.train_end:%d.%m.%Y %H:%M}",
+               "Проверка: с": f"{window.test_start:%d.%m.%Y}",
+               "по (UTC)": f"{window.test_end - pd.Timedelta(hours=1):%d.%m.%Y %H:%M}"}
+        for symbol, index in valid_index.items():
+            row[f"Строк обучения {symbol}"] = int((index < window.train_end).sum())
+            row[f"Строк проверки {symbol}"] = int(((index >= window.test_start) & (index < window.test_end)).sum())
+        fold_rows.append(row)
+
+    blocks = [("Новости: число записей после каждого этапа очистки и отбора", pd.DataFrame(flow)),
+              ("Привязка новостей к монетам по заголовку (в периоде выборки, после исключений)", pd.DataFrame(coins_rows)),
+              ("Часовые ряды: пригодные часы и часы с новостями", pd.DataFrame(hours_rows)),
+              ("Окна обучения и проверки (расширяющееся окно, зазор 1 ч)", pd.DataFrame(fold_rows))]
+    prices_path = results_dir / "prices_coverage.csv"
+    if prices_path.exists():
+        blocks.append(("Цены Binance: загруженные свечи (весь период загрузки)", pd.read_csv(prices_path)))
+    return [(title, frame) for title, frame in blocks if len(frame)]
 
 
 def sources_table(results_dir) -> pd.DataFrame:
@@ -418,6 +525,15 @@ def main() -> None:
         ("П7 Пакетные загрузки", [("П7. Серии пакетных загрузок, исключённые из признаков",
                                    pd.read_csv(batch_path) if batch_path.exists() else pd.DataFrame({"Нет данных": []}))]),
     ]
+    flow = data_flow_tables(cfg, features_report, splits, symbols, combined, log)
+    if flow:
+        flow[0] = (f"П8. Схема данных. {flow[0][0]}", flow[0][1])
+        sheets.append(("П8 Схема данных", flow))
+    selection = {s: pd.read_csv(results_dir / "tables" / f"eval_selection_{s}.csv") for s in symbols
+                 if (results_dir / "tables" / f"eval_selection_{s}.csv").exists()}
+    if selection:
+        sheets.append(("П9 Критерий выбора", [(f"П9. Критерий выбора модели (раздел 9 протокола): стратегия long/flat, "
+                                               f"{primary:g} б. п.", selection_table(selection))]))
     contents = pd.DataFrame([(name, blocks[0][0]) for name, blocks in sheets], columns=["Лист", "Содержание"])
     report.write_sheets(out_dir / "tables.xlsx", [("Описание", [("Таблицы статьи и приложения", contents)])] + sheets)
     log.info("Таблицы: %s (листов — %d)", out_dir / "tables.xlsx", len(sheets) + 1)
