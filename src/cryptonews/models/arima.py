@@ -50,6 +50,15 @@ def _hours(start: pd.Timestamp, end: pd.Timestamp, inclusive: str) -> pd.Datetim
     return pd.date_range(start, end, freq="h", inclusive=inclusive)
 
 
+def lagged(table: pd.DataFrame, columns, index: pd.DatetimeIndex) -> np.ndarray:
+    """x_{s−1} для каждого часа s из index: берётся строка таблицы на час раньше.
+
+    Сдвиг по сетке часов, а не по строкам таблицы: для последнего часа теста, который
+    лежит за концом таблицы, нужна её последняя строка.
+    """
+    return table[list(columns)].reindex(index - pd.Timedelta(hours=1)).fillna(0.0).to_numpy(float)
+
+
 def test_rows(table: pd.DataFrame, window: Window) -> pd.Index:
     mask = table["valid"] & (table.index >= window.test_start) & (table.index < window.test_end)
     return table.index[mask]
@@ -101,14 +110,11 @@ class Arimax:
         order = tuple(int(v) for v in params["order"])
         start = window.test_start - pd.Timedelta(hours=self.window_hours)
         returns = table[RETURN]
-        exog_all = table[list(columns)].shift(1)                  # x_{s−1} для r_s
         est_index = _hours(start, window.test_start, "left")
-        result = _fit(returns.reindex(est_index).to_numpy(float),
-                      exog_all.reindex(est_index).fillna(0.0).to_numpy(float), order)
+        result = _fit(returns.reindex(est_index).to_numpy(float), lagged(table, columns, est_index), order)
         full_index = _hours(start, window.test_end, "both")
-        pred = one_step(result, returns.reindex(full_index).to_numpy(float),
-                        exog_all.reindex(full_index).fillna(0.0).to_numpy(float), full_index,
-                        test_rows(table, window))
+        pred = one_step(result, returns.reindex(full_index).to_numpy(float), lagged(table, columns, full_index),
+                        full_index, test_rows(table, window))
         info = {"order": list(order), "estimation_start": str(start), "aic": float(result.aic),
                 "params": param_table(result)}
         return pred, info

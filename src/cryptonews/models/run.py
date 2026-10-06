@@ -25,7 +25,7 @@ import pandas as pd
 from cryptonews import features
 from cryptonews.features import TARGET
 from cryptonews.models import arima, baselines, lstm, trees
-from cryptonews.utils import save_json
+from cryptonews.utils import git_commit, save_json
 
 FAMILIES = {
     "baselines": ["naive_zero", "naive_mean"],
@@ -124,6 +124,7 @@ def rmse(frame: pd.DataFrame) -> float:
 class Runner:
     def __init__(self, cfg: dict, out_dir: Path, log, smoke: bool = False):
         self.cfg, self.out_dir, self.log, self.smoke = cfg, Path(out_dir), log, smoke
+        self.commit = git_commit()                          # каким кодом посчитан каждый файл
 
     def folder(self, symbol: str, model: str, feature_set: str) -> Path:
         return self.out_dir / symbol / f"{model}__{feature_set}"
@@ -150,8 +151,8 @@ class Runner:
             results.append({"params": params, "mse": float(np.mean((truth - pred) ** 2)), "rows": int(len(pred)),
                             "seconds": round(time.time() - t0, 1), "info": info})
         best = min(range(len(results)), key=lambda i: (results[i]["mse"], i))
-        save_json({"window": window.as_dict(), "seed": seed, "results": results, "chosen": results[best]["params"]},
-                  path)
+        save_json({"window": window.as_dict(), "seed": seed, "results": results, "chosen": results[best]["params"],
+                   "git_commit": self.commit}, path)
         self.log.info("[%s] %s %s: подбор на окне настройки — %d вариантов за %.0f с, выбрано %s",
                       symbol, model, feature_set, len(grid), time.time() - started, results[best]["params"])
         return results[best]["params"]
@@ -159,7 +160,7 @@ class Runner:
     def arima_order(self, symbol: str, fold_name: str) -> list[int]:
         path = self.folder(symbol, "arima", "P") / f"{fold_name}__seed0.json"
         if not path.exists():
-            raise SystemExit(f"Для ARIMAX нужен порядок ARIMA того же фолда: нет {path}. Сначала ARIMA.")
+            raise RuntimeError(f"Для ARIMAX нужен порядок ARIMA того же фолда: нет {path}. Сначала ARIMA.")
         return json.loads(path.read_text(encoding="utf-8"))["info"]["order"]
 
     def run_model(self, symbol: str, table: pd.DataFrame, splits: dict, model: str, feature_set: str) -> None:
@@ -189,7 +190,7 @@ class Runner:
                 frame.to_parquet(folder / f"{fold.name}__seed{seed}.parquet")
                 save_json({"model": model, "feature_set": feature_set, "fold": fold.as_dict(), "seed": seed,
                            "params": fold_params, "columns": columns, "rows": int(len(frame)),
-                           "seconds": round(time.time() - t0, 1), "info": info},
+                           "seconds": round(time.time() - t0, 1), "info": info, "git_commit": self.commit},
                           folder / f"{fold.name}__seed{seed}.json")
             done = [pd.read_parquet(folder / f"{fold.name}__seed{s}.parquet") for s in seeds
                     if (folder / f"{fold.name}__seed{s}.parquet").exists()]

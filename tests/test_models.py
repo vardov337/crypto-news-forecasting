@@ -158,6 +158,13 @@ def test_arima_forecast_for_row_t_uses_return_of_candle_t():
         pred_x, _ = arima.Arimax(500).fit_predict(table, columns, fold, {"order": [1, 0, 0]}, 0)
         # заглушка ARIMAX прогнозирует первым столбцом exog: для строки t это признак строки t
         np.testing.assert_allclose(pred_x.to_numpy(), table.loc[pred_x.index, columns[0]].to_numpy())
+        # таблица кончается вместе с фолдом (последний фолд выборки): последняя строка — тоже по своему признаку
+        cut = table.loc[table.index < fold.test_end]
+        pred_cut, _ = arima.Arimax(500).fit_predict(cut, columns, fold, {"order": [1, 0, 0]}, 0)
+        assert pred_cut.index[-1] == cut.index[-1]
+        np.testing.assert_allclose(pred_cut.to_numpy(), cut.loc[pred_cut.index, columns[0]].to_numpy())
+        pred_a, _ = model.fit_predict(cut, [], fold, {}, 0)
+        assert pred_a.index[-1] == cut.index[-1] and pred_a.iloc[-1] == cut["ret_lag1"].iloc[-1]
 
     with_fake({"statsmodels": types.ModuleType("statsmodels"), "statsmodels.tsa": types.ModuleType("statsmodels.tsa"),
                "statsmodels.tsa.arima": types.ModuleType("statsmodels.tsa.arima"),
