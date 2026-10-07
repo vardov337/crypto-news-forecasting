@@ -1,0 +1,15 @@
+# Служебные файлы Python и Jupyter
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Данные и результаты создаются кодом (см. data/README.md и results/README.md)
+data/*
+!data/README.md
+results/*
+!results/README.md
+
+# Рукопись статьи и переписка с журналом в репозиторий не входят
+paper/

@@ -1,20 +1,26 @@
 """Шаг 9 (задача 8.5): таблицы и рисунки для статьи.
 
-Собирает в results/report/ всё, что идёт в статью, прямо из результатов шагов 5б–8б —
+Собирает в results/report/ всё, что идёт в статью, прямо из результатов шагов 5б–8в —
 вручную ни одно число не переносится (PROTOCOL.md, раздел 11):
-  tables.xlsx     — таблицы статьи (Т1–Т5) и приложения (П1–П9); лист «Описание» — что где;
-  fig1_strategies — стоимость портфеля: buy-and-hold и лучшая по Шарпу стратегия без издержек и с ними;
-  fig2_breakeven  — безубыточные издержки и число смен позиции в год;
+  tables.xlsx     — таблицы статьи (Т1–Т5) и приложения (П1–П12); лист «Описание» — что где;
+  рисунки в порядке статьи:
+  fig1_scheme     — схема подхода;
+  fig2_coverage   — доля часов с новостями по годам;
   fig3_accuracy   — изменение RMSE относительно нулевого прогноза, %;
-  fig4_shift      — тест сдвига новостей;
-  fig5_coverage   — доля часов с новостями по годам.
+  fig4_strategies — стоимость портфеля: buy-and-hold и лучшая по Шарпу стратегия без издержек и с ними;
+  fig5_breakeven  — безубыточные издержки и число смен позиции в год;
+  fig6_shift      — тест сдвига новостей;
+  requirements-lock.txt — точные версии пакетов окружения, в котором получены результаты (шаг 0).
 Рисунки — в PNG (300 точек на дюйм) и SVG. Всё вместе — ещё и в архиве results/report.zip.
+Перед записью папка report очищается от файлов прошлых запусков.
 
 Видеокарта не нужна, около минуты. Если шаг 8 запускался до появления общей таблицы
 прогнозов, она сначала собирается из файлов шага 7 — это ещё несколько минут.
 Запуск:  python scripts/09_make_report.py   (после шагов 8, 8б и 8в)
 """
 import json
+import re
+import shutil
 import zipfile
 
 import numpy as np
@@ -26,7 +32,11 @@ from cryptonews.config import load_config
 from cryptonews.data import news as news_rules
 from cryptonews.evaluation import backtest
 from cryptonews.evaluation.predictions import all_keys, collect_all, combine, combined_path, is_baseline, label
+from cryptonews.features import TARGET
+from cryptonews.models.lstm import complete_windows
 from cryptonews.utils import get_logger, run_manifest, save_json
+
+REPORT_SUFFIXES = (".xlsx", ".png", ".svg", ".txt")
 
 ASSET = {"BTCUSDT": "Биткоин (BTCUSDT)", "ETHUSDT": "Эфир (ETHUSDT)"}
 LANGUAGE = {"en": "англоязычные", "ru": "русскоязычные"}
@@ -348,7 +358,239 @@ def sources_table(results_dir) -> pd.DataFrame:
     return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame({"Нет данных": []})
 
 
+def returns_table(cfg: dict, splits: dict, symbols: list, log) -> pd.DataFrame:
+    """Описательные статистики целевой переменной — часовой лог-доходности — на пригодных часах:
+    вся выборка и тестовый период. Автокорреляция — на полной сетке часов (непригодные часы — пропуски)."""
+    data_dir = cfg["paths"]["data_dir"]
+    periods = float(cfg["evaluation"]["strategy"]["annualization_hours"])
+    test_start, test_end = splits["folds"][0].test_start, splits["folds"][-1].test_end
+    rows = []
+    for symbol in symbols:
+        path = data_dir / "processed" / f"features_{symbol}.parquet"
+        if not path.exists():
+            log.warning("Нет %s — описательные статистики доходности (П10) не посчитаны", path)
+            continue
+        table = pd.read_parquet(path, columns=["valid", TARGET])
+        y = table[TARGET].where(table["valid"].astype(bool))
+        for sample, mask in (("вся", np.ones(len(y), dtype=bool)),
+                             ("тест", (table.index >= test_start) & (table.index < test_end))):
+            series = y[mask]
+            values = series.dropna()
+            rows.append({"Актив": symbol, "Выборка": sample, "Часов": len(values),
+                         "Среднее, %": round(100 * values.mean(), 4), "Ст. откл., %": round(100 * values.std(), 3),
+                         "Годовая волатильность, %": round(100 * values.std() * np.sqrt(periods), 1),
+                         "Минимум, %": round(100 * values.min(), 2), "Максимум, %": round(100 * values.max(), 2),
+                         "Асимметрия": round(float(values.skew()), 2), "Эксцесс": round(float(values.kurt()), 1),
+                         "Доля часов роста, %": round(100 * float((values > 0).mean()), 2),
+                         "Доля часов без изменения, %": round(100 * float((values == 0).mean()), 2),
+                         "Автокорреляция, лаг 1": round(float(series.autocorr(1)), 4)})
+    return pd.DataFrame(rows)
+
+
+def tuning_tables(cfg: dict, accuracy: dict, symbols: list, log) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Окно настройки против теста — диагностика переобучения при выборе гиперпараметров.
+
+    Для каждой настраиваемой модели — RMSE относительно нулевого прогноза на окне настройки:
+    у выбранного варианта (он же лучший) и у худшего варианта сетки, и тот же показатель на
+    тесте. Нулевой прогноз берётся на тех же строках, что и прогноз модели: у деревьев — все
+    пригодные часы окна, у LSTM — часы, для которых есть полное окно наблюдений длины lookback.
+    Для леса отдельно — лучший вариант при каждой глубине деревьев (кривая сложности)."""
+    data_dir, results_dir = cfg["paths"]["data_dir"], cfg["paths"]["results_dir"]
+    summary, depth_rows = [], []
+    for symbol in symbols:
+        path = data_dir / "processed" / f"features_{symbol}.parquet"
+        if not path.exists():
+            log.warning("Нет %s — диагностика окна настройки (П11) не посчитана", path)
+            continue
+        table = pd.read_parquet(path, columns=["valid", TARGET])
+        valid = table["valid"].to_numpy(bool)
+        y = table[TARGET].to_numpy(float)
+        test_ratio = accuracy[symbol].set_index("key")["rmse_ratio_zero"] if symbol in accuracy else pd.Series(dtype=float)
+        for key in all_keys(cfg):
+            tuning_path = results_dir / "predictions" / symbol / key.replace(":", "__") / "tuning.json"
+            if not tuning_path.exists():
+                continue
+            info = json.loads(tuning_path.read_text(encoding="utf-8"))
+            window = info["window"]
+            inside = ((table.index >= pd.Timestamp(window["test_start"])) & (table.index < pd.Timestamp(window["test_end"])))
+            model = key.split(":")[0]
+            ratios = []
+            for result in info["results"]:
+                rows = (complete_windows(valid, int(result["params"]["lookback"])) if model == "lstm" else valid) & inside
+                if int(rows.sum()) != int(result["rows"]):
+                    log.warning("[%s] %s: в окне настройки %d строк, а в tuning.json — %d", symbol, label(key),
+                                int(rows.sum()), int(result["rows"]))
+                zero = float(np.mean(y[rows] ** 2))
+                ratios.append(float(np.sqrt(result["mse"] / zero)) if zero > 0 else np.nan)
+            chosen = next(i for i, r in enumerate(info["results"]) if r["params"] == info["chosen"])
+            summary.append({"Актив": symbol, "Модель": label(key), "Вариантов в сетке": len(ratios),
+                            "Окно настройки: выбранный вариант": round(ratios[chosen], 4),
+                            "Окно настройки: худший вариант": round(float(np.nanmax(ratios)), 4),
+                            "Тест (8 фолдов)": round(float(test_ratio[key]), 4) if key in test_ratio.index else None})
+            if model == "random_forest":
+                row = {"Актив": symbol, "Модель": label(key)}
+                for depth in sorted({r["params"].get("max_depth") for r in info["results"]},
+                                    key=lambda d: np.inf if d is None else d):
+                    best = min(ratio for ratio, r in zip(ratios, info["results"]) if r["params"].get("max_depth") == depth)
+                    row["глубина без ограничения" if depth is None else f"глубина {depth}"] = round(best, 4)
+                depth_rows.append(row)
+    return pd.DataFrame(summary), pd.DataFrame(depth_rows)
+
+
+def environment_blocks(results_dir, symbols: list) -> list[tuple[str, pd.DataFrame]]:
+    """Окружение и версии кода: пакеты из манифеста шага 0, коммит и время запуска каждого шага,
+    коммиты кода, которыми посчитаны прогнозы шага 7."""
+    blocks = []
+    env_path = results_dir / "env" / "manifest.json"
+    if env_path.exists():
+        env = json.loads(env_path.read_text(encoding="utf-8"))
+        rows = [("Версия репозитория (VERSION)", env.get("repo_version")), ("Python", env.get("python")),
+                ("Платформа", env.get("platform")), ("Видеокарта", env.get("gpu") or "нет"),
+                ("Коммит кода", env.get("git_commit")), ("Время проверки окружения (UTC)", env.get("time_utc"))]
+        rows += [(f"Пакет {name}", version) for name, version in env.get("packages", {}).items()]
+        blocks.append(("Окружение расчётов (шаг 0, results/env/manifest.json)",
+                       pd.DataFrame(rows, columns=["Параметр", "Значение"])))
+    steps = []
+    for path in sorted((results_dir / "metrics").glob("*.json")):
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8")).get("manifest")
+        except (json.JSONDecodeError, AttributeError):
+            continue
+        if not isinstance(manifest, dict):
+            continue
+        packages = manifest.get("packages", {})
+        steps.append({"Файл результатов": path.name, "Время запуска (UTC)": manifest.get("time_utc"),
+                      "Коммит кода": (manifest.get("git_commit") or "")[:10],
+                      "Изменённые файлы в рабочей копии": "да" if manifest.get("git_dirty") else "нет",
+                      "Python": manifest.get("python"), "Конфигурация, SHA-256": (manifest.get("config_sha256") or "")[:16],
+                      "pandas": packages.get("pandas"), "xgboost": packages.get("xgboost"),
+                      "statsmodels": packages.get("statsmodels"), "torch": packages.get("torch")})
+    if steps:
+        blocks.append(("Запуски шагов: коммит кода, время, версии ключевых пакетов", pd.DataFrame(steps)))
+    commits = []
+    for symbol in symbols:
+        counts: dict[str, int] = {}
+        for path in (results_dir / "predictions" / symbol).glob("*/fold_*__seed*.json"):
+            commit = (json.loads(path.read_text(encoding="utf-8")).get("git_commit") or "нет")[:10]
+            counts[commit] = counts.get(commit, 0) + 1
+        commits += [{"Актив": symbol, "Коммит кода": c, "Файлов прогнозов (фолд × зерно)": n}
+                    for c, n in sorted(counts.items(), key=lambda item: -item[1])]
+    if commits:
+        blocks.append(("Коммиты кода, которыми посчитаны прогнозы шага 7", pd.DataFrame(commits)))
+    return blocks
+
+
 # ---------- рисунки ----------
+
+SCHEME_STAGES = [
+    ("Данные",
+     "Binance: часовые свечи BTCUSDT и ETHUSDT из месячных архивов с проверкой контрольных сумм SHA-256. "
+     "CryptoVision: англоязычные заголовки. ForkLog: русскоязычные заголовки (WordPress REST API)"),
+    ("Очистка и проверка времени публикации",
+     "Все метки времени — в UTC; дубли по заголовку в окне 24\u00a0ч; исключаются записи без точного времени, "
+     "пакетные загрузки и источник с ненадёжным временем; время сверено с сайтами источников"),
+    ("Тональность заголовков",
+     "Шесть моделей-кандидатов; ручная разметка 400 заголовков на каждом языке, 100\u00a0из них — вторым "
+     "разметчиком; выбор модели по macro-F1; оценка s\u00a0=\u00a0P(позитив)\u00a0−\u00a0P(негатив)"),
+    ("Часовая сетка и признаки",
+     "Новость с временем $\\tau$ относится к часу $\\lfloor\\tau\\rfloor$; признаки $x_t$ строятся только "
+     "из данных до закрытия свечи $t$; цель $y_{t+1}=\\ln(C_{t+1}/C_t)$; наборы признаков P, P_EN, P_RU, P_EN_RU"),
+    ("Модели и схема обучения",
+     "Нулевой прогноз, историческое среднее, ARIMA, ARIMAX, Random Forest, XGBoost, LSTM; гиперпараметры "
+     "выбираются на окне настройки перед тестом; 8\u00a0квартальных фолдов, расширяющееся окно, зазор 1\u00a0ч"),
+    ("Оценка",
+     "RMSE, MAE, точность направления, $R^2_{\\mathrm{OOS}}$; тесты Диболда–Мариано с поправкой Холма, "
+     "Песарана–Тиммерманна, Model Confidence Set; стратегии с издержками 0–20\u00a0б.\u00a0п. против "
+     "buy-and-hold; заранее заданный критерий выбора модели"),
+    ("Проверки устойчивости",
+     "Результаты по фолдам; тест сдвига новостей и плацебо-тест на утечку информации; тест Грейнджера "
+     "в обе стороны"),
+]
+SCHEME_SIDE = ("Воспроизводимость", [
+    "Протокол зафиксирован до расчётов, отклонения — в журнале с датами и причинами",
+    "Все параметры — в одном файле конфигурации",
+    "Манифест каждого шага: версии пакетов, зёрна, коммит кода, хеши входных файлов",
+    "Проверки в коде: порядок меток времени, скачки цены, даты обучения и теста",
+    "Все таблицы и рисунки строятся кодом",
+    "Код и инструкция запуска — GitHub, архив релиза — Zenodo",
+])
+
+
+def wrap_to_width(fig, text: str, fontsize: float, width_in: float) -> list[str]:
+    """Перенос по словам с измерением ширины строки; формулы $…$ и неразрывные пробелы не разрываются."""
+    renderer = fig.canvas.get_renderer()
+    tokens = re.findall(r"\$[^$]*\$[^ ]*|[^ ]+", text)
+
+    def width(line: str) -> float:
+        probe = fig.text(0, 0, line, fontsize=fontsize)
+        extent = probe.get_window_extent(renderer)
+        probe.remove()
+        return extent.width / fig.dpi
+
+    lines, current = [], ""
+    for token in tokens:
+        trial = f"{current} {token}".strip()
+        if current and width(trial) > width_in:
+            lines.append(current)
+            current = token
+        else:
+            current = trial
+    if current:
+        lines.append(current)
+    return lines
+
+
+def figure_scheme(plt, out_dir) -> None:
+    """Рисунок 1: этапы подхода и меры воспроизводимости (от данных не зависит)."""
+    from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch
+
+    width, left_w, gap, side_w = 7.2, 5.0, 0.18, 1.92
+    x0, badge = 0.04, 0.30
+    title_size, text_size = 8.5, 7.3
+    title_h, line_h, pad, step_gap = 0.21, 0.145, 0.08, 0.16
+    fig = plt.figure(figsize=(width, 8))
+    text_left, text_w = x0 + badge + 0.12, left_w - badge - 0.22
+    blocks = []
+    for title, text in SCHEME_STAGES:
+        lines = wrap_to_width(fig, text, text_size, text_w)
+        blocks.append((title, lines, title_h + line_h * len(lines) + 2 * pad))
+    side_items = [wrap_to_width(fig, item, text_size, side_w - 0.36) for item in SCHEME_SIDE[1]]
+    height = sum(h for *_, h in blocks) + step_gap * (len(blocks) - 1) + 0.08
+    fig.set_size_inches(width, height)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, width)
+    ax.set_ylim(0, height)
+    ax.axis("off")
+    top = y = height - 0.04
+    for i, (title, lines, h) in enumerate(blocks, start=1):
+        ax.add_patch(FancyBboxPatch((x0 + badge, y - h), left_w - badge, h, boxstyle="round,pad=0,rounding_size=0.05",
+                                    linewidth=0.9, edgecolor=report.SERIES[0], facecolor="white"))
+        ax.add_patch(Circle((x0 + 0.12, y - h / 2), 0.105, color=report.SERIES[0]))
+        ax.text(x0 + 0.12, y - h / 2, str(i), ha="center", va="center_baseline", color="white", fontsize=8,
+                fontweight="bold")
+        ax.text(text_left, y - pad - 0.15, title, ha="left", va="baseline", fontsize=title_size, fontweight="bold",
+                color=report.INK)
+        for j, line in enumerate(lines):
+            ax.text(text_left, y - pad - title_h - 0.105 - j * line_h, line, ha="left", va="baseline",
+                    fontsize=text_size, color=report.INK2)
+        if i < len(blocks):
+            middle = x0 + badge + (left_w - badge) / 2
+            ax.add_patch(FancyArrowPatch((middle, y - h), (middle, y - h - step_gap), arrowstyle="-|>",
+                                         mutation_scale=8, linewidth=0.9, color=report.MUTED, shrinkA=0, shrinkB=0))
+        y -= h + step_gap
+    bottom, side_x = y + step_gap, x0 + left_w + gap
+    ax.add_patch(FancyBboxPatch((side_x, bottom), side_w, top - bottom, boxstyle="round,pad=0,rounding_size=0.05",
+                                linewidth=0.9, edgecolor=report.AXIS, facecolor="#f5f4ef"))
+    ax.text(side_x + 0.12, top - pad - 0.15, SCHEME_SIDE[0], ha="left", va="baseline", fontsize=title_size,
+            fontweight="bold", color=report.INK)
+    y = top - pad - title_h - 0.155
+    for lines in side_items:
+        ax.text(side_x + 0.12, y, "•", ha="left", va="baseline", fontsize=text_size, color=report.INK2)
+        for j, line in enumerate(lines):
+            ax.text(side_x + 0.24, y - j * line_h, line, ha="left", va="baseline", fontsize=text_size, color=report.INK2)
+        y -= line_h * len(lines) + 0.13
+    report.save_figure(fig, out_dir / "fig1_scheme")
+    plt.close(fig)
 
 def figure_strategies(plt, combined: dict, trading: dict, cfg: dict, out_dir) -> dict:
     from matplotlib.dates import MonthLocator
@@ -374,8 +616,10 @@ def figure_strategies(plt, combined: dict, trading: dict, cfg: dict, out_dir) ->
                                     (net, f"{label(best)}, {cost:g} б. п.", report.SERIES[2])):
             ax.plot(when, np.cumprod(1.0 + series), color=color, label=name)
         ax.set_yscale("log")
+        low, high = ax.get_ylim()
+        decades = np.log10(high / low) if low > 0 else np.inf          # при большом размахе — только степени 10
         ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",")))
-        ax.yaxis.set_major_locator(LogLocator(base=10, subs=(1.0, 2.0, 5.0)))
+        ax.yaxis.set_major_locator(LogLocator(base=10, subs=(1.0, 2.0, 5.0) if decades <= 2.5 else (1.0,)))
         ax.yaxis.set_minor_formatter(NullFormatter())
         ax.xaxis.set_major_locator(MonthLocator(bymonth=(1, 7)))
         ax.xaxis.set_major_formatter(report.month_formatter())
@@ -383,7 +627,7 @@ def figure_strategies(plt, combined: dict, trading: dict, cfg: dict, out_dir) ->
         ax.set_ylabel("Стоимость портфеля (начало = 1)")
         ax.tick_params(axis="x", labelsize=7.5)
         ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.13), fontsize=7.5)
-    report.save_figure(fig, out_dir / "fig1_strategies")
+    report.save_figure(fig, out_dir / "fig4_strategies")
     plt.close(fig)
     return chosen
 
@@ -406,7 +650,7 @@ def figure_breakeven(plt, trading: dict, cfg: dict, out_dir) -> None:
         ax.xaxis.set_major_formatter(report.comma_formatter(1))
         ax.yaxis.set_major_formatter(report.comma_formatter(0))
     np.atleast_1d(axes)[0].set_ylabel("Безубыточные издержки, б. п.")
-    report.save_figure(fig, out_dir / "fig2_breakeven")
+    report.save_figure(fig, out_dir / "fig5_breakeven")
     plt.close(fig)
 
 
@@ -451,7 +695,7 @@ def figure_shift(plt, shift: dict, out_dir) -> None:
     first.set_ylabel("Изменение MSE к набору P, %")
     handles, labels = first.get_legend_handles_labels()
     fig.legend(handles, labels, loc="outside lower center", ncol=len(labels), fontsize=7.5)
-    report.save_figure(fig, out_dir / "fig4_shift")
+    report.save_figure(fig, out_dir / "fig6_shift")
     plt.close(fig)
 
 
@@ -471,7 +715,7 @@ def figure_coverage(plt, results_dir, symbols: list, out_dir) -> None:
     first.set_ylabel("Часов хотя бы с одной новостью, %")
     handles, labels = first.get_legend_handles_labels()
     fig.legend(handles, labels, loc="outside lower center", ncol=len(labels), fontsize=7.5)
-    report.save_figure(fig, out_dir / "fig5_coverage")
+    report.save_figure(fig, out_dir / "fig2_coverage")
     plt.close(fig)
 
 
@@ -482,6 +726,9 @@ def main() -> None:
     results_dir = cfg["paths"]["results_dir"]
     out_dir = results_dir / "report"
     out_dir.mkdir(parents=True, exist_ok=True)
+    for old in out_dir.iterdir():                     # файлы прошлых запусков (в том числе со старыми именами)
+        if old.is_file() and old.suffix in REPORT_SUFFIXES:
+            old.unlink()
     splits = validation.from_json(json.loads((results_dir / "splits.json").read_text(encoding="utf-8")))
     symbols = list(cfg["data"]["prices"]["symbols"])
     features_report = json.loads((results_dir / "metrics" / "features_report.json").read_text(encoding="utf-8"))
@@ -540,23 +787,45 @@ def main() -> None:
     if selection:
         sheets.append(("П9 Критерий выбора", [(f"П9. Критерий выбора модели (раздел 9 протокола): стратегия long/flat, "
                                                f"{primary:g} б. п.", selection_table(selection))]))
+    returns = returns_table(cfg, splits, symbols, log)
+    if len(returns):
+        sheets.append(("П10 Доходность", [("П10. Описательные статистики часовой лог-доходности (целевая переменная)",
+                                           returns)]))
+    tuning_summary, forest_depth = tuning_tables(cfg, accuracy, symbols, log)
+    if len(tuning_summary):
+        sheets.append(("П11 Окно настройки", [
+            ("П11. Диагностика переобучения: RMSE относительно нулевого прогноза на окне настройки и на тесте",
+             tuning_summary),
+            ("Random Forest: лучший вариант на окне настройки при каждой глубине деревьев (RMSE / нулевой прогноз)",
+             forest_depth)]))
+    environment = environment_blocks(results_dir, symbols)
+    if environment:
+        environment[0] = (f"П12. Окружение и версии. {environment[0][0]}", environment[0][1])
+        sheets.append(("П12 Окружение", environment))
     contents = pd.DataFrame([(name, blocks[0][0]) for name, blocks in sheets], columns=["Лист", "Содержание"])
     report.write_sheets(out_dir / "tables.xlsx", [("Описание", [("Таблицы статьи и приложения", contents)])] + sheets)
     log.info("Таблицы: %s (листов — %d)", out_dir / "tables.xlsx", len(sheets) + 1)
 
+    lock = results_dir / "env" / "requirements-lock.txt"
+    if lock.exists():
+        shutil.copyfile(lock, out_dir / "requirements-lock.txt")
+    else:
+        log.warning("Нет %s — выполните шаг 0, чтобы зафиксировать версии пакетов", lock)
+
     plt = report.pyplot()
+    figure_scheme(plt, out_dir)
+    figure_coverage(plt, results_dir, symbols, out_dir)
+    figure_accuracy(plt, accuracy, out_dir)
     chosen = figure_strategies(plt, combined, trading, cfg, out_dir)
     figure_breakeven(plt, trading, cfg, out_dir)
-    figure_accuracy(plt, accuracy, out_dir)
     figure_shift(plt, shift, out_dir)
-    figure_coverage(plt, results_dir, symbols, out_dir)
-    log.info("Рисунки: fig1–fig5 (PNG и SVG) в %s; на рисунке 1 — лучшая по Шарпу стратегия: %s", out_dir,
+    log.info("Рисунки: fig1–fig6 (PNG и SVG) в %s; на рисунке 4 — лучшая по Шарпу стратегия: %s", out_dir,
              "; ".join(f"{s} — {label(k)}" for s, k in chosen.items()))
-    files = sorted(p.name for p in out_dir.iterdir() if p.suffix in (".xlsx", ".png", ".svg"))
+    files = sorted(p.name for p in out_dir.iterdir() if p.suffix in REPORT_SUFFIXES)
     with zipfile.ZipFile(results_dir / "report.zip", "w", zipfile.ZIP_DEFLATED) as archive:
         for name in files:
             archive.write(out_dir / name, arcname=f"report/{name}")
-    save_json({"manifest": run_manifest(cfg), "figure1_strategies": chosen, "files": files},
+    save_json({"manifest": run_manifest(cfg), "figure4_strategies": chosen, "files": files},
               results_dir / "metrics" / "report.json")
     log.info("Готово")
 
