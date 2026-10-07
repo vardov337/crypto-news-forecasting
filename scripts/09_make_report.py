@@ -31,7 +31,8 @@ from cryptonews.cli import parse_args
 from cryptonews.config import load_config
 from cryptonews.data import news as news_rules
 from cryptonews.evaluation import backtest
-from cryptonews.evaluation.predictions import all_keys, collect_all, combine, combined_path, is_baseline, label
+from cryptonews.evaluation.predictions import (PRETTY, all_keys, collect_all, combine, combined_path, is_baseline,
+                                                label)
 from cryptonews.features import TARGET
 from cryptonews.models.lstm import complete_windows
 from cryptonews.utils import get_logger, run_manifest, save_json
@@ -341,7 +342,7 @@ def data_flow_tables(cfg: dict, features_report: dict, splits: dict, symbols: li
               ("Привязка новостей к монетам по заголовку (в периоде выборки, после исключений)", pd.DataFrame(coins_rows)),
               ("Часовые ряды: пригодные часы и часы с новостями", pd.DataFrame(hours_rows)),
               ("Окна обучения и проверки (расширяющееся окно, зазор 1 ч)", pd.DataFrame(fold_rows))]
-    prices_path = results_dir / "prices_coverage.csv"
+    prices_path = results_dir / "metrics" / "prices_coverage.csv"     # пишет шаг 1
     if prices_path.exists():
         blocks.append(("Цены Binance: загруженные свечи (весь период загрузки)", pd.read_csv(prices_path)))
     return [(title, frame) for title, frame in blocks if len(frame)]
@@ -467,16 +468,35 @@ def environment_blocks(results_dir, symbols: list) -> list[tuple[str, pd.DataFra
                       "statsmodels": packages.get("statsmodels"), "torch": packages.get("torch")})
     if steps:
         blocks.append(("Запуски шагов: коммит кода, время, версии ключевых пакетов", pd.DataFrame(steps)))
-    commits = []
+    commits, timing = [], {}
     for symbol in symbols:
         counts: dict[str, int] = {}
         for path in (results_dir / "predictions" / symbol).glob("*/fold_*__seed*.json"):
-            commit = (json.loads(path.read_text(encoding="utf-8")).get("git_commit") or "нет")[:10]
+            info = json.loads(path.read_text(encoding="utf-8"))
+            commit = (info.get("git_commit") or "нет")[:10]
             counts[commit] = counts.get(commit, 0) + 1
+            entry = timing.setdefault((symbol, path.parent.name.split("__")[0]), [0.0, 0.0])
+            entry[1] += float(info.get("seconds") or 0)
+        for path in (results_dir / "predictions" / symbol).glob("*/tuning.json"):
+            entry = timing.setdefault((symbol, path.parent.name.split("__")[0]), [0.0, 0.0])
+            entry[0] += sum(float(r.get("seconds") or 0) for r in json.loads(path.read_text(encoding="utf-8"))["results"])
         commits += [{"Актив": symbol, "Коммит кода": c, "Файлов прогнозов (фолд × зерно)": n}
                     for c, n in sorted(counts.items(), key=lambda item: -item[1])]
     if commits:
         blocks.append(("Коммиты кода, которыми посчитаны прогнозы шага 7", pd.DataFrame(commits)))
+    if timing:
+        order = {model: i for i, model in enumerate(PRETTY)}
+        rows = [{"Актив": symbol, "Модель": PRETTY.get(model, model), "Подбор гиперпараметров, мин": round(tune / 60, 1),
+                 "Обучение и прогноз по фолдам и зёрнам, мин": round(folds / 60, 1),
+                 "Всего, мин": round((tune + folds) / 60, 1)}
+                for (symbol, model), (tune, folds) in sorted(timing.items(), key=lambda item: (
+                    symbols.index(item[0][0]) if item[0][0] in symbols else 99, order.get(item[0][1], 99)))]
+        total = sum(tune + folds for tune, folds in timing.values())
+        rows.append({"Актив": "все", "Модель": "все", "Подбор гиперпараметров, мин": round(sum(t for t, _ in timing.values()) / 60, 1),
+                     "Обучение и прогноз по фолдам и зёрнам, мин": round(sum(f for _, f in timing.values()) / 60, 1),
+                     "Всего, мин": round(total / 60, 1)})
+        blocks.append(("Время расчёта шага 7 по записям в файлах прогнозов (без чтения данных и пауз), мин",
+                       pd.DataFrame(rows)))
     return blocks
 
 

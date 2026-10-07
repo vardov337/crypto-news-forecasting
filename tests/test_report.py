@@ -81,6 +81,50 @@ def test_tuning_tables_ratios_and_rows(tmp_path, caplog):
     assert depth.iloc[0]["глубина без ограничения"] == pytest.approx(1.004)
 
 
+def test_data_flow_tables(tmp_path, caplog):
+    cfg, splits, table = setup(tmp_path)
+    data_dir, results_dir = cfg["paths"]["data_dir"], cfg["paths"]["results_dir"]
+    start, end = pd.Timestamp("2022-01-01", tz="UTC"), pd.Timestamp("2025-06-01", tz="UTC")
+    rows = [("a.com", start + pd.Timedelta(hours=h), True, False) for h in range(5)]         # биткоин
+    rows += [("a.com", start + pd.Timedelta(hours=10 + h), False, True) for h in range(3)]  # эфир
+    rows += [("a.com", start + pd.Timedelta(hours=20), False, False)]                      # общерыночная
+    rows += [("a.com", start - pd.Timedelta(days=3), True, False)]                         # до начала выборки
+    rows += [("cryptopanic.com", start + pd.Timedelta(hours=30 + h), True, False) for h in range(2)]
+    burst = start + pd.Timedelta(days=40)
+    rows += [("b.com", burst + pd.Timedelta(seconds=5 * i), True, True) for i in range(10)]  # пакетная загрузка
+    news = pd.DataFrame(rows, columns=["source", "published_utc", "mentions_btc", "mentions_eth"])
+    news["title"] = [f"t{i}" for i in range(len(news))]
+    (data_dir / "interim").mkdir(parents=True)
+    news.to_parquet(data_dir / "interim" / "news_en.parquet")
+    (results_dir / "tables").mkdir(parents=True)
+    pd.DataFrame({"Этап": ["Записей в наборе", "Без повторов"], "Записей": [30, len(news)]}).to_csv(
+        results_dir / "tables" / "cleaning_news_en.csv", index=False)
+    (results_dir / "metrics").mkdir()
+    pd.DataFrame({"Актив": ["BTCUSDT"], "Свечей": [1]}).to_csv(results_dir / "metrics" / "prices_coverage.csv", index=False)
+    counts = np.zeros(len(table))
+    counts[:4] = 1
+    features = table.assign(en_news_count=counts, ru_news_count=0.0)
+    features.to_parquet(data_dir / "processed" / "features_BTCUSDT.parquet")
+    report_json = {"period": {"start_inclusive": str(start), "end_exclusive": str(end)}}
+    with caplog.at_level(logging.WARNING):
+        blocks = dict(step.data_flow_tables(cfg, report_json, splits, ["BTCUSDT"], {"BTCUSDT": table.iloc[:7]}, LOG))
+    flow = blocks["Новости: число записей после каждого этапа очистки и отбора"]
+    english = dict(zip(flow["Этап"], flow["Записей"]))
+    assert english["Записей в наборе"] == 30 and english["Без повторов"] == len(news)
+    assert english["Без пакетных загрузок"] == len(news) - 2 - 10
+    assert english[next(s for s in english if s.startswith("Без источников"))] == len(news) - 2
+    assert english[next(s for s in english if s.startswith("В периоде выборки"))] == 9
+    assert english[next(s for s in english if "BTCUSDT" in s)] == 6          # 5 о биткоине и 1 общерыночная
+    assert flow["Убрано на этапе"].iloc[1] == 30 - len(news)
+    hours = blocks["Часовые ряды: пригодные часы и часы с новостями"].iloc[0]
+    assert hours["Пригодных"] == int(table["valid"].sum()) and hours["Строк теста, общих для всех моделей"] == 7
+    assert hours["Часов с новостями, %: англоязычные, вся выборка"] == round(100 * 4 / len(table), 1)
+    folds = blocks["Окна обучения и проверки (расширяющееся окно, зазор 1 ч)"]
+    assert list(folds["Окно"]) == ["настройка"] + [str(i) for i in range(1, len(splits["folds"]) + 1)]
+    assert "Цены Binance: загруженные свечи (весь период загрузки)" in blocks
+    assert not [r for r in caplog.records if "news_ru" not in r.getMessage()]   # русскоязычных новостей в тесте нет
+
+
 def test_environment_blocks(tmp_path):
     results = tmp_path / "results"
     (results / "env").mkdir(parents=True)
@@ -94,13 +138,23 @@ def test_environment_blocks(tmp_path):
     folder = results / "predictions" / "BTCUSDT" / "xgboost__P"
     folder.mkdir(parents=True)
     for i in (1, 2):
-        (folder / f"fold_{i}__seed0.json").write_text(json.dumps({"git_commit": "0123456789abcdef"}), encoding="utf-8")
+        (folder / f"fold_{i}__seed0.json").write_text(json.dumps({"git_commit": "0123456789abcdef", "seconds": 90}),
+                                                      encoding="utf-8")
+    (folder / "tuning.json").write_text(json.dumps({"results": [{"seconds": 30}, {"seconds": 30}]}), encoding="utf-8")
+    lstm = results / "predictions" / "BTCUSDT" / "lstm__P"
+    lstm.mkdir()
+    (lstm / "fold_1__seed0.json").write_text(json.dumps({"git_commit": "0123456789abcdef", "seconds": 600}),
+                                             encoding="utf-8")
     blocks = dict(step.environment_blocks(results, ["BTCUSDT"]))
-    assert len(blocks) == 3
+    assert len(blocks) == 4
     runs = next(frame for title, frame in blocks.items() if title.startswith("Запуски"))
     assert runs.iloc[0]["Коммит кода"] == "0123456789" and runs.iloc[0]["xgboost"] == "3.0.5"
     commits = next(frame for title, frame in blocks.items() if title.startswith("Коммиты"))
-    assert commits.iloc[0]["Файлов прогнозов (фолд × зерно)"] == 2
+    assert commits.iloc[0]["Файлов прогнозов (фолд × зерно)"] == 3
+    timing = next(frame for title, frame in blocks.items() if title.startswith("Время расчёта")).set_index("Модель")
+    assert list(timing.index) == ["XGBoost", "LSTM", "все"]
+    assert timing.loc["XGBoost", "Подбор гиперпараметров, мин"] == 1.0 and timing.loc["XGBoost", "Всего, мин"] == 4.0
+    assert timing.loc["все", "Всего, мин"] == 14.0
 
 
 def test_scheme_figure(tmp_path):
