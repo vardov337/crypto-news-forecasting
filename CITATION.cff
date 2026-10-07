@@ -5,10 +5,9 @@ type: software
 authors:
   - family-names: Dovgopolik
     given-names: Varvara Sergeevna
-    affiliation: Saint Petersburg State University
-  - family-names: Podkorytova
-    given-names: Olga Anatolyevna
-    affiliation: Saint Petersburg State University
+    affiliation: ITMO University
+  - family-names: Dovgopolik
+    given-names: Ilya Sergeevich
 abstract: >-
   Code, experiment protocol (fixed before the computations, with a log of later deviations) and
   results for comparing hourly BTCUSDT and ETHUSDT return forecasts on Binance (zero forecast,
