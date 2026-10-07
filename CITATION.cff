@@ -1,14 +1,32 @@
-# Заполните авторов и адрес репозитория перед первым релизом (задача 10.2).
 cff-version: 1.2.0
-message: "Если вы используете этот код, сошлитесь на него по данным ниже."
-title: "Воспроизводимое сравнение моделей прогнозирования криптовалют с учётом новостного фона"
+message: "Если вы используете этот код или результаты, сошлитесь на них по данным ниже. If you use this code or its results, please cite it as below."
+title: "Reproducible comparison of hourly cryptocurrency return forecasting models with news sentiment: code, protocol and results"
 type: software
 authors:
-  - family-names: "<Фамилия>"
-    given-names: "<Имя>"
-  - family-names: "<Фамилия>"
-    given-names: "<Имя>"
-version: 0.1.0
-date-released: "2026-09-22"
+  - family-names: Dovgopolik
+    given-names: Varvara Sergeevna
+    affiliation: Saint Petersburg State University
+  - family-names: Podkorytova
+    given-names: Olga Anatolyevna
+    affiliation: Saint Petersburg State University
+abstract: >-
+  Code, experiment protocol (fixed before the computations, with a log of later deviations) and
+  results for comparing hourly BTCUSDT and ETHUSDT return forecasts on Binance (zero forecast,
+  historical mean, ARIMA, ARIMAX, Random Forest, XGBoost, LSTM) with and without English-language
+  (CryptoVision) and Russian-language (ForkLog) news sentiment features. Includes expanding-window
+  walk-forward evaluation, Diebold–Mariano and Pesaran–Timmermann tests with the Holm correction,
+  the Model Confidence Set, a trading evaluation with transaction costs, leakage checks and a
+  pre-specified model selection criterion.
+keywords:
+  - cryptocurrency
+  - bitcoin
+  - ether
+  - return forecasting
+  - news sentiment
+  - reproducibility
+  - walk-forward validation
+  - transaction costs
+version: 1.0.0
+date-released: "2026-10-07"
 license: MIT
-repository-code: "https://github.com/<user>/<repo>"
+repository-code: "https://github.com/vardov337/crypto-news-forecasting"
