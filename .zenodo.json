@@ -1,0 +1,15 @@
+{
+  "title": "Reproducible comparison of hourly cryptocurrency return forecasting models with news sentiment: code, protocol and results",
+  "upload_type": "software",
+  "creators": [
+    {"name": "Dovgopolik, Varvara Sergeevna", "affiliation": "Saint Petersburg State University"},
+    {"name": "Podkorytova, Olga Anatolyevna", "affiliation": "Saint Petersburg State University"}
+  ],
+  "description": "<p>Code, experiment protocol and results for the paper «Разработка воспроизводимого подхода к прогнозированию динамики криптовалют с учетом новостного фона» (Development of a reproducible approach to forecasting cryptocurrency price dynamics incorporating news sentiment).</p><p>The pipeline compares one-hour-ahead forecasts of BTCUSDT and ETHUSDT log returns on Binance (zero forecast, historical mean, ARIMA, ARIMAX, Random Forest, XGBoost, LSTM), each with and without English-language (CryptoVision) and Russian-language (ForkLog) news sentiment features. Evaluation: expanding-window walk-forward test over June 2023 – May 2025 in eight quarterly folds, Diebold–Mariano and Pesaran–Timmermann tests with the Holm correction, the Model Confidence Set, long/flat and long/short strategies with transaction costs against buy-and-hold, a model selection criterion fixed in advance, leakage checks (news shift test, placebo) and a descriptive Granger test.</p><p>The protocol (PROTOCOL.md) was approved before the computations; later changes are logged with dates and reasons. All parameters are in configs/config.yaml; every table and figure of the paper is produced by scripts/09_make_report.py. The folder release/ contains the results the paper is based on: report tables and figures, step reports, forecasts of all models on the common test hours, and news metadata without headlines together with sentiment scores. Prices are downloaded from data.binance.vision; CryptoVision (DOI 10.17632/3c3xtxtfb6.2, CC BY 4.0) is downloaded from Mendeley Data; ForkLog headlines are collected by the scripts and are not redistributed.</p>",
+  "keywords": ["cryptocurrency", "bitcoin", "ether", "return forecasting", "news sentiment", "FinBERT", "reproducibility", "walk-forward validation", "transaction costs", "Diebold–Mariano test"],
+  "license": "MIT",
+  "language": "rus",
+  "related_identifiers": [
+    {"identifier": "10.17632/3c3xtxtfb6.2", "relation": "references", "scheme": "doi"}
+  ]
+}
