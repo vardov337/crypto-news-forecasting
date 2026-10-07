@@ -14,6 +14,7 @@
 Запуск:  python scripts/08c_granger.py
 """
 import json
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -65,7 +66,9 @@ def stationarity(table: pd.DataFrame, columns: list, samples: dict, max_lags: in
     for column in columns:
         for sample, index in samples.items():
             series = table.loc[index, column].dropna()
-            stat, p, used, n, *_ = adfuller(series.to_numpy(float), maxlag=max_lags, regression="c", autolag="AIC")
+            with warnings.catch_warnings():          # statsmodels 0.15 предупреждает о будущем формате результата
+                warnings.simplefilter("ignore", FutureWarning)
+                stat, p, used, n, *_ = adfuller(series.to_numpy(float), maxlag=max_lags, regression="c", autolag="AIC")
             rows.append({"variable": column, "sample": sample, "adf_stat": float(stat), "p_value": float(p),
                          "lags_used": int(used), "n": int(n)})
     return pd.DataFrame(rows)
