@@ -1,0 +1,119 @@
+2026-10-08 18:33:46 INFO [BTCUSDT] границы эффекта (95%-й интервал изменения MSE, %; МОЭ — минимальный обнаружимый эффект):
+question                                      comparison  mse_change_pct  ci_low_pct  ci_high_pct  mde_pct
+      В1       Random Forest P_EN против Random Forest P           0.075      -0.054        0.204    0.164
+      В1       Random Forest P_RU против Random Forest P           0.062      -0.070        0.194    0.168
+      В1    Random Forest P_EN_RU против Random Forest P           0.069      -0.065        0.204    0.171
+      В1                   XGBoost P_EN против XGBoost P          -0.002      -0.139        0.135    0.174
+      В1                   XGBoost P_RU против XGBoost P          -0.021      -0.090        0.048    0.088
+      В1                XGBoost P_EN_RU против XGBoost P           0.024      -0.102        0.149    0.159
+      В1                         LSTM P_EN против LSTM P           0.055      -0.099        0.209    0.196
+      В1                         LSTM P_RU против LSTM P           0.184       0.006        0.361    0.225
+      В1                      LSTM P_EN_RU против LSTM P           0.157      -0.037        0.352    0.247
+      В1                      ARIMAX P_EN против ARIMA P           0.059      -0.024        0.141    0.105
+      В1                      ARIMAX P_RU против ARIMA P           0.074      -0.064        0.212    0.175
+      В1                   ARIMAX P_EN_RU против ARIMA P           0.127      -0.035        0.289    0.205
+      В2 Random Forest P_EN_RU против Random Forest P_EN          -0.006      -0.044        0.032    0.048
+      В2             XGBoost P_EN_RU против XGBoost P_EN           0.026      -0.073        0.124    0.125
+      В2                   LSTM P_EN_RU против LSTM P_EN           0.102      -0.030        0.235    0.168
+      В2               ARIMAX P_EN_RU против ARIMAX P_EN           0.069      -0.067        0.204    0.172
+2026-10-08 18:33:46 INFO [BTCUSDT] по кварталам: В1 — новости уменьшают MSE в 37 из 96 пар (знаковый тест p = 0.991); В2 — новости уменьшают MSE в 13 из 32 пар (знаковый тест p = 0.892)
+2026-10-08 18:33:46 INFO [BTCUSDT] на часах с новостями и всплесках потока:
+question                                      comparison subset  rows  mse_change_pct  ci_low_pct  p_value  p_holm
+      В1       Random Forest P_EN против Random Forest P   news 12281           0.062      -0.086    0.793   1.000
+      В1       Random Forest P_EN против Random Forest P  burst  1758           0.126      -0.195    0.780   1.000
+      В1       Random Forest P_RU против Random Forest P   news  5849           0.051      -0.096    0.752   1.000
+      В1       Random Forest P_RU против Random Forest P  burst  1770           0.020      -0.193    0.574   1.000
+      В1    Random Forest P_EN_RU против Random Forest P   news 13130           0.040      -0.110    0.698   1.000
+      В1    Random Forest P_EN_RU против Random Forest P  burst  3170           0.015      -0.245    0.544   1.000
+      В1                   XGBoost P_EN против XGBoost P   news 12281          -0.040      -0.206    0.318   1.000
+      В1                   XGBoost P_EN против XGBoost P  burst  1758          -0.190      -0.397    0.036   0.436
+      В1                   XGBoost P_RU против XGBoost P   news  5849          -0.039      -0.119    0.167   1.000
+      В1                   XGBoost P_RU против XGBoost P  burst  1770           0.013      -0.158    0.559   1.000
+      В1                XGBoost P_EN_RU против XGBoost P   news 13130           0.003      -0.138    0.515   1.000
+      В1                XGBoost P_EN_RU против XGBoost P  burst  3170           0.019      -0.121    0.606   1.000
+      В1                         LSTM P_EN против LSTM P   news 12281           0.076      -0.105    0.795   1.000
+      В1                         LSTM P_EN против LSTM P  burst  1758          -0.348      -0.769    0.052   0.574
+      В1                         LSTM P_RU против LSTM P   news  5849           0.310       0.055    0.991   1.000
+      В1                         LSTM P_RU против LSTM P  burst  1770           0.479      -0.162    0.929   1.000
+      В1                      LSTM P_EN_RU против LSTM P   news 13130           0.170      -0.032    0.951   1.000
+      В1                      LSTM P_EN_RU против LSTM P  burst  3170           0.158      -0.199    0.807   1.000
+      В1                      ARIMAX P_EN против ARIMA P   news 12281           0.076      -0.015    0.949   1.000
+      В1                      ARIMAX P_EN против ARIMA P  burst  1758          -0.094      -0.291    0.175   1.000
+      В1                      ARIMAX P_RU против ARIMA P   news  5849           0.052      -0.212    0.650   1.000
+      В1                      ARIMAX P_RU против ARIMA P  burst  1770           0.226      -0.187    0.859   1.000
+      В1                   ARIMAX P_EN_RU против ARIMA P   news 13130           0.107      -0.075    0.876   1.000
+      В1                   ARIMAX P_EN_RU против ARIMA P  burst  3170           0.195      -0.144    0.870   1.000
+      В2 Random Forest P_EN_RU против Random Forest P_EN   news  5849           0.005      -0.017    0.678   1.000
+      В2 Random Forest P_EN_RU против Random Forest P_EN  burst  1770           0.013      -0.031    0.721   1.000
+      В2             XGBoost P_EN_RU против XGBoost P_EN   news  5849           0.034      -0.068    0.744   1.000
+      В2             XGBoost P_EN_RU против XGBoost P_EN  burst  1770           0.031      -0.112    0.665   1.000
+      В2                   LSTM P_EN_RU против LSTM P_EN   news  5849           0.075      -0.122    0.773   1.000
+      В2                   LSTM P_EN_RU против LSTM P_EN  burst  1770           0.226      -0.113    0.904   1.000
+      В2               ARIMAX P_EN_RU против ARIMAX P_EN   news  5849           0.046      -0.212    0.636   1.000
+      В2               ARIMAX P_EN_RU против ARIMAX P_EN  burst  1770           0.241      -0.161    0.880   1.000
+2026-10-08 18:33:46 INFO [BTCUSDT] тональность и доходность (часы с новостями):
+language      relation  rows    corr  slope_pct   wald  p_value  p_holm
+      en    тот же час 12281  0.0086     0.0123 0.9839   0.3212  0.9637
+      en следующий час 12281 -0.0034    -0.0049 0.1731   0.6774  1.0000
+      ru    тот же час  5849 -0.0051    -0.0070 0.1505   0.6981  1.0000
+      ru следующий час  5849  0.0399     0.0567 9.0744   0.0026  0.0104
+2026-10-08 18:33:46 INFO [ETHUSDT] границы эффекта (95%-й интервал изменения MSE, %; МОЭ — минимальный обнаружимый эффект):
+question                                      comparison  mse_change_pct  ci_low_pct  ci_high_pct  mde_pct
+      В1       Random Forest P_EN против Random Forest P          -0.069      -0.231        0.092    0.205
+      В1       Random Forest P_RU против Random Forest P           0.038      -0.050        0.125    0.111
+      В1    Random Forest P_EN_RU против Random Forest P          -0.075      -0.188        0.038    0.143
+      В1                   XGBoost P_EN против XGBoost P           0.004      -0.047        0.056    0.066
+      В1                   XGBoost P_RU против XGBoost P          -0.050      -0.127        0.026    0.097
+      В1                XGBoost P_EN_RU против XGBoost P          -0.001      -0.036        0.034    0.045
+      В1                         LSTM P_EN против LSTM P           0.000      -0.186        0.187    0.236
+      В1                         LSTM P_RU против LSTM P           0.001      -0.122        0.124    0.156
+      В1                      LSTM P_EN_RU против LSTM P          -0.010      -0.259        0.239    0.316
+      В1                      ARIMAX P_EN против ARIMA P           0.040      -0.045        0.126    0.109
+      В1                      ARIMAX P_RU против ARIMA P           0.069      -0.041        0.179    0.139
+      В1                   ARIMAX P_EN_RU против ARIMA P           0.114      -0.024        0.252    0.175
+      В2 Random Forest P_EN_RU против Random Forest P_EN          -0.006      -0.143        0.131    0.173
+      В2             XGBoost P_EN_RU против XGBoost P_EN          -0.005      -0.036        0.026    0.039
+      В2                   LSTM P_EN_RU против LSTM P_EN          -0.010      -0.257        0.236    0.313
+      В2               ARIMAX P_EN_RU против ARIMAX P_EN           0.073      -0.035        0.182    0.138
+2026-10-08 18:33:46 INFO [ETHUSDT] по кварталам: В1 — новости уменьшают MSE в 48 из 96 пар (знаковый тест p = 0.541); В2 — новости уменьшают MSE в 16 из 32 пар (знаковый тест p = 0.570)
+2026-10-08 18:33:46 INFO [ETHUSDT] на часах с новостями и всплесках потока:
+question                                      comparison subset  rows  mse_change_pct  ci_low_pct  p_value  p_holm
+      В1       Random Forest P_EN против Random Forest P   news 11019          -0.087      -0.304    0.215   1.000
+      В1       Random Forest P_EN против Random Forest P  burst  1758           0.062      -0.135    0.731   1.000
+      В1       Random Forest P_RU против Random Forest P   news  5148          -0.033      -0.135    0.265   1.000
+      В1       Random Forest P_RU против Random Forest P  burst  1766          -0.047      -0.262    0.336   1.000
+      В1    Random Forest P_EN_RU против Random Forest P   news 12085          -0.114      -0.244    0.044   0.523
+      В1    Random Forest P_EN_RU против Random Forest P  burst  3209          -0.226      -0.425    0.013   0.159
+      В1                   XGBoost P_EN против XGBoost P   news 11019          -0.003      -0.066    0.458   1.000
+      В1                   XGBoost P_EN против XGBoost P  burst  1758          -0.002      -0.112    0.489   1.000
+      В1                   XGBoost P_RU против XGBoost P   news  5148          -0.004      -0.036    0.415   1.000
+      В1                   XGBoost P_RU против XGBoost P  burst  1766          -0.026      -0.078    0.168   1.000
+      В1                XGBoost P_EN_RU против XGBoost P   news 12085          -0.007      -0.042    0.343   1.000
+      В1                XGBoost P_EN_RU против XGBoost P  burst  3209          -0.015      -0.089    0.348   1.000
+      В1                         LSTM P_EN против LSTM P   news 11019           0.052      -0.148    0.694   1.000
+      В1                         LSTM P_EN против LSTM P  burst  1758           0.040      -0.221    0.617   1.000
+      В1                         LSTM P_RU против LSTM P   news  5148           0.047      -0.112    0.719   1.000
+      В1                         LSTM P_RU против LSTM P  burst  1766           0.238      -0.081    0.928   1.000
+      В1                      LSTM P_EN_RU против LSTM P   news 12085           0.067      -0.217    0.677   1.000
+      В1                      LSTM P_EN_RU против LSTM P  burst  3209           0.315      -0.269    0.855   1.000
+      В1                      ARIMAX P_EN против ARIMA P   news 11019           0.045      -0.048    0.828   1.000
+      В1                      ARIMAX P_EN против ARIMA P  burst  1758          -0.055      -0.249    0.291   1.000
+      В1                      ARIMAX P_RU против ARIMA P   news  5148           0.091      -0.151    0.770   1.000
+      В1                      ARIMAX P_RU против ARIMA P  burst  1766           0.268      -0.112    0.916   1.000
+      В1                   ARIMAX P_EN_RU против ARIMA P   news 12085           0.134      -0.021    0.955   1.000
+      В1                   ARIMAX P_EN_RU против ARIMA P  burst  3209           0.166      -0.110    0.881   1.000
+      В2 Random Forest P_EN_RU против Random Forest P_EN   news  5148          -0.002      -0.132    0.486   0.971
+      В2 Random Forest P_EN_RU против Random Forest P_EN  burst  1766          -0.045      -0.267    0.345   1.000
+      В2             XGBoost P_EN_RU против XGBoost P_EN   news  5148          -0.032      -0.058    0.009   0.035
+      В2             XGBoost P_EN_RU против XGBoost P_EN  burst  1766          -0.060      -0.110    0.011   0.043
+      В2                   LSTM P_EN_RU против LSTM P_EN   news  5148          -0.160      -0.452    0.142   0.425
+      В2                   LSTM P_EN_RU против LSTM P_EN  burst  1766           0.032      -0.447    0.552   1.000
+      В2               ARIMAX P_EN_RU против ARIMAX P_EN   news  5148           0.109      -0.128    0.816   0.971
+      В2               ARIMAX P_EN_RU против ARIMAX P_EN  burst  1766           0.282      -0.094    0.929   1.000
+2026-10-08 18:33:46 INFO [ETHUSDT] тональность и доходность (часы с новостями):
+language      relation  rows    corr  slope_pct   wald  p_value  p_holm
+      en    тот же час 11019  0.0161     0.0292 2.5615   0.1095  0.4380
+      en следующий час 11019 -0.0091    -0.0162 0.9727   0.3240  0.7573
+      ru    тот же час  5148 -0.0158    -0.0267 1.3099   0.2524  0.7573
+      ru следующий час  5148  0.0130     0.0227 0.9548   0.3285  0.7573
+2026-10-08 18:33:46 INFO Готово

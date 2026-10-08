@@ -1,0 +1,86 @@
+{
+  "manifest": {
+    "time_utc": "2026-10-08T18:33:40+00:00",
+    "python": "3.13.16",
+    "platform": "Linux-6.18.44-fc-v80-x86_64-with-glibc2.39",
+    "git_commit": "cf7b881516ffd17d1b952a6d40b75bc3af485603",
+    "git_dirty": false,
+    "config_path": "/home/claude/crypto-news-forecasting/configs/config.yaml",
+    "config_sha256": "6f2680c592c11d62925325c30e98f45bd923a70d359c09439ec4ec75642abb06",
+    "protocol_version": "1.0",
+    "packages": {
+      "numpy": "2.5.3",
+      "pandas": "3.0.5",
+      "pyarrow": "не установлен",
+      "pyyaml": "6.0.3",
+      "requests": "2.34.2",
+      "beautifulsoup4": "4.15.0",
+      "scikit-learn": "1.9.1",
+      "xgboost": "не установлен",
+      "statsmodels": "не установлен",
+      "arch": "не установлен",
+      "torch": "не установлен",
+      "transformers": "не установлен",
+      "tokenizers": "не установлен",
+      "huggingface-hub": "не установлен",
+      "openpyxl": "3.1.5",
+      "matplotlib": "3.11.2"
+    },
+    "inputs": {}
+  },
+  "burst_quantile": 0.9,
+  "assets": {
+    "BTCUSDT": {
+      "largest_possible_improvement_pct": 0.1391323513937003,
+      "mde_pct_range": [
+        0.04841750252348831,
+        0.24686253200092062
+      ],
+      "folds": [
+        {
+          "question": "В1",
+          "pairs": 96,
+          "improved": 37,
+          "share_improved": 0.3854166666666667,
+          "sign_test_p": 0.9907833235342687
+        },
+        {
+          "question": "В2",
+          "pairs": 32,
+          "improved": 13,
+          "share_improved": 0.40625,
+          "sign_test_p": 0.8923364251386374
+        }
+      ],
+      "news_hours_min_p": 0.16727996305660292,
+      "burst_hours_min_p": 0.03637192069174434,
+      "subsets_min_p_holm": 0.4364630483009321
+    },
+    "ETHUSDT": {
+      "largest_possible_improvement_pct": 0.25895633532922785,
+      "mde_pct_range": [
+        0.039119386482339785,
+        0.3159571879279636
+      ],
+      "folds": [
+        {
+          "question": "В1",
+          "pairs": 96,
+          "improved": 48,
+          "share_improved": 0.5,
+          "sign_test_p": 0.5406109823177315
+        },
+        {
+          "question": "В2",
+          "pairs": 32,
+          "improved": 16,
+          "share_improved": 0.5,
+          "sign_test_p": 0.5699749670457095
+        }
+      ],
+      "news_hours_min_p": 0.008845650517480007,
+      "burst_hours_min_p": 0.010742743776249066,
+      "subsets_min_p_holm": 0.03538260206992003
+    }
+  }
+}
