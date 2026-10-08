@@ -65,6 +65,7 @@ def test_folds_and_subsets():
     assert masks[("burst", "en")].sum() == pytest.approx(0.1 * len(frame), abs=2)
     subsets = step.subsets_table(frame, pairs, masks)
     assert list(subsets["subset"]) == ["news", "burst"] and subsets.iloc[0]["rows"] == len(frame) // 4
+    assert (subsets["p_holm"] >= subsets["p_value"]).all()
 
 
 def test_validity_detects_same_hour_relation():

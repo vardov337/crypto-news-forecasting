@@ -157,7 +157,11 @@ def subsets_table(combined: pd.DataFrame, pairs: pd.DataFrame, masks: dict) -> p
             rows.append({"question": pair.question, "comparison": pair.comparison, "subset": kind, "language": lang,
                          **effect(y[mask], combined[pair.base].to_numpy(float)[mask],
                                   combined[pair.alternative].to_numpy(float)[mask])})
-    return pd.DataFrame(rows)
+    table = pd.DataFrame(rows)
+    table["p_holm"] = np.nan                     # поправка Холма — в каждом семействе (вопрос × подвыборка)
+    for _, index in table.groupby(["question", "subset"]).groups.items():
+        table.loc[index, "p_holm"] = stat_tests.holm(table.loc[index, "p_value"])
+    return table
 
 
 def validity_table(combined: pd.DataFrame, series: pd.DataFrame) -> pd.DataFrame:
@@ -177,7 +181,9 @@ def validity_table(combined: pd.DataFrame, series: pd.DataFrame) -> pd.DataFrame
             rows.append({"language": lang, "relation": relation, "rows": int(mask.sum()),
                          "corr": float(np.corrcoef(regressor, target)[0, 1]), "slope_pct": 100.0 * float(beta),
                          "wald": test["wald"], "p_value": test["p_value"]})
-    return pd.DataFrame(rows)
+    table = pd.DataFrame(rows)
+    table["p_holm"] = stat_tests.holm(table["p_value"])
+    return table
 
 
 def main() -> None:
@@ -212,6 +218,7 @@ def main() -> None:
             "folds": summary.to_dict(orient="records"),
             "news_hours_min_p": float(subsets.loc[subsets["subset"] == "news", "p_value"].min()),
             "burst_hours_min_p": float(subsets.loc[subsets["subset"] == "burst", "p_value"].min()),
+            "subsets_min_p_holm": float(subsets["p_holm"].min()),
         }
         log.info("[%s] границы эффекта (95%%-й интервал изменения MSE, %%; МОЭ — минимальный обнаружимый эффект):\n%s",
                  symbol, bounds[["question", "comparison", "mse_change_pct", "ci_low_pct", "ci_high_pct", "mde_pct"]]
@@ -220,7 +227,7 @@ def main() -> None:
             f"{r['question']} — новости уменьшают MSE в {r['improved']} из {r['pairs']} пар (знаковый тест p = "
             f"{r['sign_test_p']:.3f})" for r in summary.to_dict(orient="records")))
         log.info("[%s] на часах с новостями и всплесках потока:\n%s", symbol,
-                 subsets[["question", "comparison", "subset", "rows", "mse_change_pct", "ci_low_pct", "p_value"]]
+                 subsets[["question", "comparison", "subset", "rows", "mse_change_pct", "ci_low_pct", "p_value", "p_holm"]]
                  .round(3).to_string(index=False))
         log.info("[%s] тональность и доходность (часы с новостями):\n%s", symbol,
                  validity.round(4).to_string(index=False))
