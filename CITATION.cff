@@ -6,8 +6,11 @@ authors:
   - family-names: Dovgopolik
     given-names: Varvara Sergeevna
     affiliation: ITMO University
+    orcid: "https://orcid.org/0009-0001-7620-1832"
   - family-names: Dovgopolik
     given-names: Ilya Sergeevich
+    affiliation: ITMO University
+    orcid: "https://orcid.org/0009-0004-8308-8091"
 abstract: >-
   Code, experiment protocol (fixed before the computations, with a log of later deviations) and
   results for comparing hourly BTCUSDT and ETHUSDT return forecasts on Binance (zero forecast,
