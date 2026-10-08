@@ -1,0 +1,669 @@
+{
+  "manifest": {
+    "time_utc": "2026-10-07T12:24:04+00:00",
+    "python": "3.13.16",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "git_commit": "ca43531687bfe3116c1ca1a19d0d30c6b2244c4e",
+    "git_dirty": false,
+    "config_path": "/content/repo/configs/config.yaml",
+    "config_sha256": "6f2680c592c11d62925325c30e98f45bd923a70d359c09439ec4ec75642abb06",
+    "protocol_version": "1.0",
+    "packages": {
+      "numpy": "2.1.3",
+      "pandas": "2.2.3",
+      "pyarrow": "23.0.1",
+      "pyyaml": "6.0.3",
+      "requests": "2.32.4",
+      "beautifulsoup4": "4.13.5",
+      "scikit-learn": "1.6.1",
+      "xgboost": "3.4.1",
+      "statsmodels": "0.15.0",
+      "arch": "8.0.0",
+      "torch": "2.11.0+cpu",
+      "transformers": "5.18.0",
+      "tokenizers": "0.23.2",
+      "huggingface-hub": "1.33.0",
+      "openpyxl": "3.1.5",
+      "matplotlib": "3.10.0"
+    },
+    "inputs": {}
+  },
+  "files": [
+    {
+      "path": "results/report/tables.xlsx",
+      "bytes": 49303,
+      "sha256": "7aba2a496d460078a99d1a66864d6bf5ff98c86da0157f1ee5bf39f36dbd29ec"
+    },
+    {
+      "path": "results/report/fig1_scheme.png",
+      "bytes": 527382,
+      "sha256": "000d32d097e76a4a5de1167357ec1220c542146c847dd2a219d0acd8f0f75fcb"
+    },
+    {
+      "path": "results/report/fig2_coverage.png",
+      "bytes": 120531,
+      "sha256": "86ef4b5046c42237bbbfd829f8ba5932f080d9174041c76f4a12be207bdb4f0f"
+    },
+    {
+      "path": "results/report/fig3_accuracy.png",
+      "bytes": 159696,
+      "sha256": "41b80153f5f6fdbf9fe727043f1ffaad3549cd508156c163325d0072d85c15a9"
+    },
+    {
+      "path": "results/report/fig4_strategies.png",
+      "bytes": 196892,
+      "sha256": "6c91b139915fd41b0ff5342ed89eb6343559b2ebc322fa97a21a316d6c699541"
+    },
+    {
+      "path": "results/report/fig5_breakeven.png",
+      "bytes": 80929,
+      "sha256": "7c994d5876d1d9ff4a790926b6924fd5027addb6cde8d295d351e798dc7e6fbb"
+    },
+    {
+      "path": "results/report/fig6_shift.png",
+      "bytes": 154030,
+      "sha256": "ac6da6300531227f1acbf0014ea1ce24858e018efabc1a9ad36e4f28f8abbe85"
+    },
+    {
+      "path": "results/report/fig1_scheme.svg",
+      "bytes": 210344,
+      "sha256": "43f5e7e242428cafd085a2fb9d9c13d683c7797091efdcaf02087c0343a65bba"
+    },
+    {
+      "path": "results/report/fig2_coverage.svg",
+      "bytes": 60568,
+      "sha256": "1f3d5b0be794dde484729d1aeb45b908cfe3cd1041f593729a5986a785a04623"
+    },
+    {
+      "path": "results/report/fig3_accuracy.svg",
+      "bytes": 71701,
+      "sha256": "19940b709cc4b11c772b07757325c1a3656d32c916a7c17c64b10a2551c3a11f"
+    },
+    {
+      "path": "results/report/fig4_strategies.svg",
+      "bytes": 596063,
+      "sha256": "88d0cf9e89782a7f85e9cf53e44ce078e5338b1120e25eea7b57ee401451a5c6"
+    },
+    {
+      "path": "results/report/fig5_breakeven.svg",
+      "bytes": 59912,
+      "sha256": "c406f187145d4ded46e99485a693f7243c6e04cb97bd2c15b7a45affdeb14cf5"
+    },
+    {
+      "path": "results/report/fig6_shift.svg",
+      "bytes": 61129,
+      "sha256": "b951d3ac162130847bd74e51f7dd9983d004e247ca8457715f6cbc07bdbafd48"
+    },
+    {
+      "path": "results/report/requirements-lock.txt",
+      "bytes": 14366,
+      "sha256": "8a14937bbabe4ec519de2ae72696a7c847ab504aa1809f3508b10d1e4bab277a"
+    },
+    {
+      "path": "results/metrics/cryptovision_timezone.json",
+      "bytes": 7227,
+      "sha256": "c419ada3abc34f477671976142a43d4c5b9da6a3c4ff619c52691ed83fedba51"
+    },
+    {
+      "path": "results/metrics/evaluation.json",
+      "bytes": 2536,
+      "sha256": "4a639882d7997515c14331369003c3542f37add6ae218b3e3d9307422ff8abdc"
+    },
+    {
+      "path": "results/metrics/features_report.json",
+      "bytes": 10112,
+      "sha256": "0a5223d2756f83b970305556e4447049199693d5876b4bc7f980583012b7313e"
+    },
+    {
+      "path": "results/metrics/forklog_collect_report.json",
+      "bytes": 1244,
+      "sha256": "055ffadc0bcfe2e9ce05c498e2edba2c95cdb5e2c4d4deac86d6a051642bf178"
+    },
+    {
+      "path": "results/metrics/granger.json",
+      "bytes": 1215,
+      "sha256": "8bae5007ef6887f4ec8fbe87d8e318c1b0a694f2d519810a0303e94ab6340d42"
+    },
+    {
+      "path": "results/metrics/leakage_checks.json",
+      "bytes": 8834,
+      "sha256": "26f78576dc4f536d0c62facc947be82c36dd71e7e51d5c1c48a8f72b265a1bd5"
+    },
+    {
+      "path": "results/metrics/models_arima.json",
+      "bytes": 1260,
+      "sha256": "3e19ae2ea999b2100b29c09ef5c321673591c30fe6229454e32a2a6cb9aa0df2"
+    },
+    {
+      "path": "results/metrics/models_baselines.json",
+      "bytes": 1270,
+      "sha256": "abeed32214e5ff151667cd17345be7a695a0fe7a82141eda5cdfc5a7296a6909"
+    },
+    {
+      "path": "results/metrics/models_lstm.json",
+      "bytes": 1244,
+      "sha256": "54de8c5af1dde2645f6d45fd13721101eb4c7a9eacaea0923830716920356d83"
+    },
+    {
+      "path": "results/metrics/models_smoke.json",
+      "bytes": 1383,
+      "sha256": "1524e83783cda9d539446454f33b3109bbf861583f8d05ca8ca944d730411930"
+    },
+    {
+      "path": "results/metrics/models_trees.json",
+      "bytes": 1269,
+      "sha256": "75ca88de09f451ec80e53240f074fbf97c7f7cf959ab968a990066efd730ab29"
+    },
+    {
+      "path": "results/metrics/news_ru_prepare.json",
+      "bytes": 1113,
+      "sha256": "05a323b5ab0f10a88498cf29a5e7eda30e5ffa7da3a94dbd2656a840bc109647"
+    },
+    {
+      "path": "results/metrics/prices_download_report.json",
+      "bytes": 9451,
+      "sha256": "493291a7e6821d92e2b57ed5e8626191d526f998bb81b0c19534b0c2e6d8c615"
+    },
+    {
+      "path": "results/metrics/report.json",
+      "bytes": 1356,
+      "sha256": "beb5c5808a1172eabdf407fb5dab9f2c877f85cc1e51ef126145f67a56d8ff3f"
+    },
+    {
+      "path": "results/metrics/sample_period.json",
+      "bytes": 5855,
+      "sha256": "a92af99d2341652c5b035db6874d5902653805161ad7bcf93ac8288eb599942c"
+    },
+    {
+      "path": "results/metrics/sentiment_choice.json",
+      "bytes": 6244,
+      "sha256": "b83db14b92ef74d90f99b1f4b61679e3e8b6fc1a943f3e98d29407fa2953c4a1"
+    },
+    {
+      "path": "results/metrics/sentiment_models.json",
+      "bytes": 12288,
+      "sha256": "d7f6e75bf500a1a18765c9c73be136ac2dface4bc66319470d21317a2013e3be"
+    },
+    {
+      "path": "results/metrics/prices_coverage.csv",
+      "bytes": 465,
+      "sha256": "2004d17c38ca9f1365de7d15ce7b4732510e0e736c0e07e360c22e3ea902474f"
+    },
+    {
+      "path": "results/tables/annotation_en_strata.csv",
+      "bytes": 1549,
+      "sha256": "d7c4805a5396f673c605c614f2f2bbae5c8abed22dba1438adc039f73a333c94"
+    },
+    {
+      "path": "results/tables/annotation_ru_strata.csv",
+      "bytes": 324,
+      "sha256": "0e059fca9723733adce01049d6fda0f08927094918c458342d2fac5a74c50118"
+    },
+    {
+      "path": "results/tables/batch_uploads_en.csv",
+      "bytes": 2636,
+      "sha256": "dd67a523e13b754f368b04ae8996bac60412a02628aa0420c875d43eb7859202"
+    },
+    {
+      "path": "results/tables/batch_uploads_ru.csv",
+      "bytes": 118,
+      "sha256": "2eb5615584ab070fbeafc17183721ce0ebf96af91819ad7552f61e257d3e93c8"
+    },
+    {
+      "path": "results/tables/cleaning_news_en.csv",
+      "bytes": 452,
+      "sha256": "d9050d44aa46636a4b247ccf1ba49f50e911cfe9945bcd23ac4a3a5f74168b5f"
+    },
+    {
+      "path": "results/tables/cleaning_news_ru.csv",
+      "bytes": 443,
+      "sha256": "b46c0053c84d0f85a2b87fae75a3a951a86e91bd35b0ac4293aca65afc5d3a7e"
+    },
+    {
+      "path": "results/tables/eval_accuracy_BTCUSDT.csv",
+      "bytes": 4786,
+      "sha256": "92a9391f0c51410397eaad7a04ac2a2671113f79c6b21bbcb1fa182bed799b80"
+    },
+    {
+      "path": "results/tables/eval_accuracy_ETHUSDT.csv",
+      "bytes": 4764,
+      "sha256": "db822a1bad718c7343c3db5ce46708fe055e66df184a7afb067aa82ff7301201"
+    },
+    {
+      "path": "results/tables/eval_folds_BTCUSDT.csv",
+      "bytes": 15411,
+      "sha256": "d754e4a039415686991e5b2d0a3a4c2ba46bfe84b05cd2e7e7feef06d696643d"
+    },
+    {
+      "path": "results/tables/eval_folds_ETHUSDT.csv",
+      "bytes": 15376,
+      "sha256": "fac8483a06b2a7104c1d25bfdf9d887aed42c06f767eaa77d76620fb59412958"
+    },
+    {
+      "path": "results/tables/eval_granger_BTCUSDT.csv",
+      "bytes": 1830,
+      "sha256": "aca8cd23ae46503cf7f3f7a389fef8f1fd99f1060224b3cf0b2c28b7e3dd94de"
+    },
+    {
+      "path": "results/tables/eval_granger_ETHUSDT.csv",
+      "bytes": 1827,
+      "sha256": "8cc91155d69368cf13372db4970bdc7674b7b3828d8c725d9d0078a5d74ccda7"
+    },
+    {
+      "path": "results/tables/eval_questions_BTCUSDT.csv",
+      "bytes": 2248,
+      "sha256": "99dcb068d71eecb493573377cf44c5856963c5877e7ffafb6b1541ccb77c38e8"
+    },
+    {
+      "path": "results/tables/eval_questions_ETHUSDT.csv",
+      "bytes": 2270,
+      "sha256": "17389dc166fe39fb65c440a4317a0d13b9e8b26fb11506fa6412ebe1727ab6b8"
+    },
+    {
+      "path": "results/tables/eval_selection_BTCUSDT.csv",
+      "bytes": 2541,
+      "sha256": "46ef3170b81bb1f98d03403aa7dfb5d9c972626b274b165df239d2b24ac20ea3"
+    },
+    {
+      "path": "results/tables/eval_selection_ETHUSDT.csv",
+      "bytes": 2533,
+      "sha256": "982d10964def6d4c178834c2e9bfe84eb5b7f8d84d45bda8a3249ad42dc0a7b5"
+    },
+    {
+      "path": "results/tables/eval_trading_BTCUSDT.csv",
+      "bytes": 37630,
+      "sha256": "44476ed392781163dc0855227df8f1078ca4654c3ce6b6605b95d545e3563e9e"
+    },
+    {
+      "path": "results/tables/eval_trading_ETHUSDT.csv",
+      "bytes": 37807,
+      "sha256": "1b8ada84d9e73b397d1da07902fe6e26eb2fe79577596927943e625ef73ffd1e"
+    },
+    {
+      "path": "results/tables/features_summary.csv",
+      "bytes": 3545,
+      "sha256": "2b136d4fba7745e0217201bc92ab4521a1aba352c1a0dc056b35c581f6914f2b"
+    },
+    {
+      "path": "results/tables/granger_BTCUSDT.csv",
+      "bytes": 6490,
+      "sha256": "f21462b59963490d3422b01f2773e1e51c1755c123955d60d1795cb564a0fef8"
+    },
+    {
+      "path": "results/tables/granger_ETHUSDT.csv",
+      "bytes": 6490,
+      "sha256": "d9b1018e2fc803344228b1be6abe2277456e40adc07b516197b8e57b99cb03f3"
+    },
+    {
+      "path": "results/tables/large_hourly_moves.csv",
+      "bytes": 360,
+      "sha256": "e84cfbcbeb3ec3d3ee3075efcfcd23d7df858018b45f6e33e39f4751261b7836"
+    },
+    {
+      "path": "results/tables/leakage_placebo_BTCUSDT.csv",
+      "bytes": 1927,
+      "sha256": "fe986b7c641a54beaca2442e436178a0291d8f51cc27b6219d8f288ada8056be"
+    },
+    {
+      "path": "results/tables/leakage_placebo_ETHUSDT.csv",
+      "bytes": 1931,
+      "sha256": "f7f3224fc5ffd7cff6a28c410a59ee6b8423977e5234323629cde3a0a308e6de"
+    },
+    {
+      "path": "results/tables/leakage_shift_BTCUSDT.csv",
+      "bytes": 1191,
+      "sha256": "f4795192a35ca3fa7d442d1af4f98d3e4b3d630bc839b04f14728f1ae41def58"
+    },
+    {
+      "path": "results/tables/leakage_shift_ETHUSDT.csv",
+      "bytes": 1203,
+      "sha256": "14cb639620ec771babc436afdbdda4fe33156a054dc96b861a6ecb3260ace286"
+    },
+    {
+      "path": "results/tables/model_rmse_quick.csv",
+      "bytes": 2056,
+      "sha256": "3d19c30655d3a376fd74f9509aa770182384eb0e6e7f35e2b81f062a7f336c52"
+    },
+    {
+      "path": "results/tables/model_rmse_smoke.csv",
+      "bytes": 2021,
+      "sha256": "99cc1311f6fed63a3dad3af75f14ce247b569eac8b368b2ecd4503f067d71903"
+    },
+    {
+      "path": "results/tables/news_coverage_by_year_BTCUSDT.csv",
+      "bytes": 201,
+      "sha256": "a31c2d8477fe73bf1f5f13706831256b003cde56187df6a5c30946d045208d7d"
+    },
+    {
+      "path": "results/tables/news_coverage_by_year_ETHUSDT.csv",
+      "bytes": 197,
+      "sha256": "802646b750ded389c0a0defb0089098e58386faf891b57d4ceed227e9c2ccbc0"
+    },
+    {
+      "path": "results/tables/news_en_by_coin.csv",
+      "bytes": 276,
+      "sha256": "b3cea01ecdc299d22f1d99f7d8a9ce07709b3dae489fa39f73eeae185b417605"
+    },
+    {
+      "path": "results/tables/news_en_by_month.csv",
+      "bytes": 1260,
+      "sha256": "29d5ab6be63b8a3b441484ee8773c43eb8d0865fc88a8ab40925344d074ca12b"
+    },
+    {
+      "path": "results/tables/news_en_by_source.csv",
+      "bytes": 156,
+      "sha256": "71119a755d88c81f510972f31b10e5fae3e9d6b95e694d7d981cbf365c2ece9a"
+    },
+    {
+      "path": "results/tables/news_en_by_source_month.csv",
+      "bytes": 2670,
+      "sha256": "057a36bb2f7bf6cf5e3598f83d6b292c3dcab2b53743f343432d5898d5bf160b"
+    },
+    {
+      "path": "results/tables/news_en_by_year.csv",
+      "bytes": 121,
+      "sha256": "5a05231a23fc2b8b5725664c98e023cfcc4cb17a73deabeffca5cb47117b2670"
+    },
+    {
+      "path": "results/tables/news_en_sources_span.csv",
+      "bytes": 642,
+      "sha256": "ad61d504081d20f24da1b23f36ca813532c9031cadee10954df1eb8226cbe00c"
+    },
+    {
+      "path": "results/tables/news_en_time_precision.csv",
+      "bytes": 490,
+      "sha256": "640b56e7e1faf983977fd9987a103eb5298bb85a0c6250f817b4683e4c0b5c8e"
+    },
+    {
+      "path": "results/tables/news_en_time_precision_raw.csv",
+      "bytes": 488,
+      "sha256": "3fba38fc8d7fcf6123222152859bc4f93c836d684a4438cf3c37e6b28b1eb502"
+    },
+    {
+      "path": "results/tables/news_ru_by_coin.csv",
+      "bytes": 271,
+      "sha256": "d03508b5cdef5ad0438091d34eeb55755c489f4340d7035b18a1646eafe761c5"
+    },
+    {
+      "path": "results/tables/news_ru_by_month.csv",
+      "bytes": 1800,
+      "sha256": "1cba0c30f5feff4f0b10a135521e6e815d9999aa97f145a4496610a66fda96da"
+    },
+    {
+      "path": "results/tables/news_ru_by_source.csv",
+      "bytes": 52,
+      "sha256": "0f6139604d5c45933f9fa7992b92ab7be2a05774f16ecca1569d191b94943eae"
+    },
+    {
+      "path": "results/tables/news_ru_by_source_month.csv",
+      "bytes": 1795,
+      "sha256": "3c93e08cab6e6a5d958106a3b7105285dcfcd47c0cff5cb78b551b95180b626c"
+    },
+    {
+      "path": "results/tables/news_ru_by_year.csv",
+      "bytes": 153,
+      "sha256": "673acd8e8ebc1ab233e333452850d536777301059ed458b0b209e3e4e40cfe0d"
+    },
+    {
+      "path": "results/tables/news_ru_sources_span.csv",
+      "bytes": 224,
+      "sha256": "8caeaa561ea73e3826971f9fc47877dc1f8de6d524dbe9ec655435b165767837"
+    },
+    {
+      "path": "results/tables/news_ru_time_precision.csv",
+      "bytes": 212,
+      "sha256": "3ecd393631ed6444805612c40178ffd668bd91eb12ba6f908ebdf91f2951f747"
+    },
+    {
+      "path": "results/tables/sentiment_candidates.csv",
+      "bytes": 806,
+      "sha256": "dc367ad9037ddde1e7a926779cc70993c5a5b9bf6d0c6ec8278bcab5cbde6b25"
+    },
+    {
+      "path": "results/tables/sentiment_validation_en.csv",
+      "bytes": 676,
+      "sha256": "1ea5ce3a2664bdcd54824db5cb253224e6548a49c8bd6da17146c2508bdb20de"
+    },
+    {
+      "path": "results/tables/sentiment_validation_ru.csv",
+      "bytes": 788,
+      "sha256": "722b5b22df670924b46de69f6fed7dbbea1e066de309f5748a948a8d05cd30a3"
+    },
+    {
+      "path": "results/tables/shared_timestamps_en.csv",
+      "bytes": 1002,
+      "sha256": "b7a21a216d581e63ed58b35cca3134a017b0be0a4fdb78da3a7e195e87361469"
+    },
+    {
+      "path": "results/tables/shared_timestamps_ru.csv",
+      "bytes": 36,
+      "sha256": "5a4a644920da4787da3bd6d0f44b77a89c335a2ab0d4ed2d2c9abefdc1eac6f0"
+    },
+    {
+      "path": "results/tables/stationarity_BTCUSDT.csv",
+      "bytes": 601,
+      "sha256": "f67bb7475854e030a3e1ff33e819ff926afa348016e9e4b15e87a34c8b5cbdf6"
+    },
+    {
+      "path": "results/tables/stationarity_ETHUSDT.csv",
+      "bytes": 598,
+      "sha256": "dd03b6dba73ce0d4601ce5459ebbe9ee8bbb211337a730b07f9e9830c7a13fac"
+    },
+    {
+      "path": "results/splits.json",
+      "bytes": 1761,
+      "sha256": "ad924c71e5265ea0eb9f2a04e1c3604fb8a267e9d3803da66781e501da560b0b"
+    },
+    {
+      "path": "results/env/manifest.json",
+      "bytes": 1120,
+      "sha256": "7c8cdb0af02806c17311f02e9bafa8b0a764ef19791efd630daabb60568c6bfd"
+    },
+    {
+      "path": "results/env/requirements-lock.txt",
+      "bytes": 14366,
+      "sha256": "8a14937bbabe4ec519de2ae72696a7c847ab504aa1809f3508b10d1e4bab277a"
+    },
+    {
+      "path": "results/predictions_combined_BTCUSDT.parquet",
+      "bytes": 2746930,
+      "sha256": "45d808ca4e0b73f6e406c42a30cd7d7eabc1c7f282418e7e965de145875068d0"
+    },
+    {
+      "path": "results/predictions_combined_ETHUSDT.parquet",
+      "bytes": 2545870,
+      "sha256": "3567475603b58de86e179a33eb56cf147e8f78c3a6d75f3568bd520b794f714d"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/lstm__P/tuning.json",
+      "bytes": 1736,
+      "sha256": "54ca43d12ade76fbd6ef0a8622878b8e6727b26c45d6dabbf6cf033bbe97a265"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/lstm__P_EN/tuning.json",
+      "bytes": 1737,
+      "sha256": "6a7c5bba5f203446de0f10c29649619b6396ae006f5c9107f697d00d45917524"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/lstm__P_EN_RU/tuning.json",
+      "bytes": 1736,
+      "sha256": "a509e090b9bff1b0ecc4c8a6f7e0c4d955d7915624af36afb660a933d274864d"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/lstm__P_RU/tuning.json",
+      "bytes": 1734,
+      "sha256": "dd3ec09c9bc75a5f6f1e7711a605a7931422b32c2b4eaed19ef85ce9fc9c66cb"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/random_forest__P/tuning.json",
+      "bytes": 3797,
+      "sha256": "5b2826db99e691f4996b4c8ec0344203d8d6b95dfe13c20ead652ea4241f84ab"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/random_forest__P_EN/tuning.json",
+      "bytes": 3800,
+      "sha256": "274931c3639824fd2474d18328d893e5dd900365680f91050dd89b086643f195"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/random_forest__P_EN_RU/tuning.json",
+      "bytes": 3794,
+      "sha256": "e5d6432e2fe168df57e5d9a52d8c73ef142cadc37345c9f2ee5a4bfbdb57b927"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/random_forest__P_RU/tuning.json",
+      "bytes": 3798,
+      "sha256": "bafd6d14d3f62223970078a9cef187d62aa47458e4217688da8f76baeb396b49"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/xgboost__P/tuning.json",
+      "bytes": 3390,
+      "sha256": "01d4c01aa52724c67b4afd06f5b19a12bff39c60acbd78d1a5a0e09ebb4ce451"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/xgboost__P_EN/tuning.json",
+      "bytes": 3389,
+      "sha256": "d7c760ff1f663eec64e64278193798244ed1ffd8d241395897204bbfe7e397d1"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/xgboost__P_EN_RU/tuning.json",
+      "bytes": 3388,
+      "sha256": "5dd40570ceb8c9c1589722e658bb472088992152583182f070f5d943711ebdc7"
+    },
+    {
+      "path": "results/predictions/BTCUSDT/xgboost__P_RU/tuning.json",
+      "bytes": 3387,
+      "sha256": "9b648fa4d956dc30ae61e878149ec6ec1434213be60819103014940ef2cc6545"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/lstm__P/tuning.json",
+      "bytes": 1737,
+      "sha256": "e3136344cc6ddafb7dc94c056497964d2d1dca366fb7155d7c48b61ec29b69e8"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/lstm__P_EN/tuning.json",
+      "bytes": 1733,
+      "sha256": "1bac3d0fe3312c1268b8ac7ce401a4e538ab9b11375dc35a2d974afab10face6"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/lstm__P_EN_RU/tuning.json",
+      "bytes": 1738,
+      "sha256": "1a17d6fe75266211fba2cf54943b98989aade1ea4535ea2afc84a1fe997f2acc"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/lstm__P_RU/tuning.json",
+      "bytes": 1737,
+      "sha256": "b40b43bd14223914d4371a63aa7f86a00cae91eecc5b1bf8d460f9a5bd5dbe86"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/random_forest__P/tuning.json",
+      "bytes": 3797,
+      "sha256": "a0a1d4d197bfe7b6a20923ba75867a5b93e67c18c169001487f2040169b965ea"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/random_forest__P_EN/tuning.json",
+      "bytes": 3796,
+      "sha256": "72332d02cb9caba249ea458f3aecc1fe1415d7bf0f7eaab5f3bb31cfcbfa1c32"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/random_forest__P_EN_RU/tuning.json",
+      "bytes": 3797,
+      "sha256": "931b409933bf880d5ce4747d45a93a07e9875f6dd7f8a05dd9dc23ef7594fed3"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/random_forest__P_RU/tuning.json",
+      "bytes": 3795,
+      "sha256": "374527a2b924a157b221bd014ed0ff8b11396afd42c783a825ffa17db17c8aad"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/xgboost__P/tuning.json",
+      "bytes": 3384,
+      "sha256": "658357f87fb1d0cc40109793d8f5cd77680e3b1a166c6311a7b11a102c37b5c7"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/xgboost__P_EN/tuning.json",
+      "bytes": 3386,
+      "sha256": "95413870c248a1e8c6c432d2a08dddc94f0ff3363628a82feac8cf932d7975f4"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/xgboost__P_EN_RU/tuning.json",
+      "bytes": 3387,
+      "sha256": "5d1ee4a2c4edab8144694a40c1fdcde5951b3252e5b035224d6be8852438af34"
+    },
+    {
+      "path": "results/predictions/ETHUSDT/xgboost__P_RU/tuning.json",
+      "bytes": 3388,
+      "sha256": "291b0db6490011084e2111fb6286bcf1476c26c40a2f8db3f527fa515675deae"
+    },
+    {
+      "path": "data/interim/news_en.parquet",
+      "bytes": 6675457,
+      "sha256": "4ba9d1eb11f0614954849f4012fcde3780c30169ba664843e6a00a2831134737"
+    },
+    {
+      "path": "data/interim/news_ru.parquet",
+      "bytes": 3161406,
+      "sha256": "cdc18abfef9e28fd6e29891c6df497f382cc702138ad7ba4fdc2ab54f9746b4b"
+    },
+    {
+      "path": "data/interim/sentiment/en/ProsusAI__finbert@4556d130.parquet",
+      "bytes": 8276186,
+      "sha256": "d43c0ac818c3da9195319fc12d787d14f1cf2826cb3736eb4fb1ec57ddf9ce2d"
+    },
+    {
+      "path": "data/interim/sentiment/en/ProsusAI__finbert@4556d130.json",
+      "bytes": 1516,
+      "sha256": "8e7023d350567195651e7b9f68766df3ef9f6705f0d1622c94a43974a5318aaa"
+    },
+    {
+      "path": "data/interim/sentiment/en/burakutf__finetuned-finbert-crypto@24ca955d.parquet",
+      "bytes": 34019,
+      "sha256": "2e22cd8ac085a7bf3c80a3e07ce767bde28d989086e5856dc20265c63ead9a01"
+    },
+    {
+      "path": "data/interim/sentiment/en/burakutf__finetuned-finbert-crypto@24ca955d.json",
+      "bytes": 1663,
+      "sha256": "b3b729f3e56dad19e26462eeb571ad873ace9817d713e7e7526b0eb08f214659"
+    },
+    {
+      "path": "data/interim/sentiment/en/ElKulako__cryptobert@9e37c910.parquet",
+      "bytes": 34018,
+      "sha256": "5531b3d66d4544b54e3bbad824035565b50c57d07a547cc67f8e488b88411a9b"
+    },
+    {
+      "path": "data/interim/sentiment/en/ElKulako__cryptobert@9e37c910.json",
+      "bytes": 1519,
+      "sha256": "9cb083be36331d25c4acea3a93ddc12e6bbcb171cc10714797dee983c292eba4"
+    },
+    {
+      "path": "data/interim/sentiment/ru/blanchefort__rubert-base-cased-sentiment@2d4b5fc4.parquet",
+      "bytes": 32743,
+      "sha256": "82a8fdb238642f2a33f56951d5b81a4d823a798990004dd400b78753c9dfb593"
+    },
+    {
+      "path": "data/interim/sentiment/ru/blanchefort__rubert-base-cased-sentiment@2d4b5fc4.json",
+      "bytes": 1797,
+      "sha256": "cb7155cc7764c109b2d3742a1f187b4cfde14a458867016349a1c9d0385836c0"
+    },
+    {
+      "path": "data/interim/sentiment/ru/seara__rubert-base-cased-russian-sentiment@d0961992.parquet",
+      "bytes": 32745,
+      "sha256": "290433ea49379ddecb9ee74b5f7d43f2eebb29ebba2d1aeebcf6baa33d494688"
+    },
+    {
+      "path": "data/interim/sentiment/ru/seara__rubert-base-cased-russian-sentiment@d0961992.json",
+      "bytes": 1814,
+      "sha256": "5b1a4e67774a383865d71c3b59301dd7e06ea2d45f3c63293198c94632277e61"
+    },
+    {
+      "path": "data/interim/sentiment/ru/mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4.parquet",
+      "bytes": 3943569,
+      "sha256": "8b1a881633a8cf49c530efd6041caf0fd00d3f53c3f2f0125847f1f3682f0d06"
+    },
+    {
+      "path": "data/interim/sentiment/ru/mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4.json",
+      "bytes": 1811,
+      "sha256": "8f49db772b4289b674d39295d4f0e85fbbf5e57033546e1f196861387408ca74"
+    }
+  ],
+  "note": "Заголовки новостей не включены (data/README.md); шаг 2 собирает их заново по адресам."
+}

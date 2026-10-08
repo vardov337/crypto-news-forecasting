@@ -1,0 +1,335 @@
+{
+  "manifest": {
+    "time_utc": "2026-10-02T06:57:34+00:00",
+    "python": "3.13.15",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "git_commit": "c3d29a81fa2b91454515cb81ba2831fe6f734b64",
+    "git_dirty": true,
+    "config_path": "/content/repo/configs/config.yaml",
+    "config_sha256": "463f2b354cdc925a4649bbd6f4a4af126bf3578ab573cd99c67184eacf9d7531",
+    "protocol_version": "0.1-draft",
+    "packages": {
+      "numpy": "2.1.3",
+      "pandas": "2.2.3",
+      "pyarrow": "23.0.1",
+      "pyyaml": "6.0.3",
+      "requests": "2.32.4",
+      "beautifulsoup4": "4.13.5",
+      "scikit-learn": "1.6.1",
+      "xgboost": "3.4.1",
+      "statsmodels": "0.15.0",
+      "arch": "8.0.0",
+      "torch": "2.11.0+cu130",
+      "transformers": "5.17.0",
+      "tokenizers": "0.23.2",
+      "huggingface-hub": "1.31.0",
+      "openpyxl": "3.1.5",
+      "matplotlib": "3.10.0"
+    },
+    "inputs": {}
+  },
+  "models": [
+    {
+      "language": "en",
+      "model": "ProsusAI/finbert",
+      "revision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+      "slug": "ProsusAI__finbert@4556d130",
+      "file": "ProsusAI__finbert@4556d130.parquet",
+      "news_sha256": "91e605e98e9b85e4954ee2d5b33fab68840936e7b07eb56565687a49a193842c",
+      "records": 116913,
+      "max_length": 128,
+      "batch_size": 64,
+      "device": "Tesla T4",
+      "parameters": 109484547,
+      "id2label": {
+        "0": "positive",
+        "1": "negative",
+        "2": "neutral"
+      },
+      "mapping": {
+        "positive": "positive",
+        "negative": "negative",
+        "neutral": "neutral"
+      },
+      "truncated": 4,
+      "token_length_median": 18.0,
+      "label_shares": {
+        "negative": 0.203,
+        "neutral": 0.5832,
+        "positive": 0.2138
+      },
+      "mean_score": 0.03741484880447388,
+      "sanity_correct": 3,
+      "sanity_total": 4,
+      "seconds": 159.4,
+      "most_positive": [
+        "Bernstein: Arbitrum Has Strongest User Momentum Among Leading Blockchains",
+        "Ripple's Partner MoneyGram Strengthens Its Presence in Fifth Biggest Remittance Market",
+        "Bitcoin improved positions in the new Chinese rating of cryptocurrencies, in second place - Tron"
+      ],
+      "most_negative": [
+        "Block’s Q4 Bitcoin Revenue Fell 7% Year Over Year to $1.83B",
+        "Kraken News: Crypto Exchange's Income Fell 6.8% Year-Over-Year to $79.7M in Q2",
+        "Robinhood Crypto Revenue Fell 18% Sequentially to $31M in Q2"
+      ],
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.2",
+        "huggingface-hub": "1.31.0"
+      }
+    },
+    {
+      "language": "en",
+      "model": "burakutf/finetuned-finbert-crypto",
+      "revision": "24ca955d09a693342a25e6a22249346431cd778c",
+      "slug": "burakutf__finetuned-finbert-crypto@24ca955d",
+      "file": "burakutf__finetuned-finbert-crypto@24ca955d.parquet",
+      "news_sha256": "91e605e98e9b85e4954ee2d5b33fab68840936e7b07eb56565687a49a193842c",
+      "records": 116913,
+      "max_length": 128,
+      "batch_size": 64,
+      "device": "Tesla T4",
+      "parameters": 109754115,
+      "id2label": {
+        "0": "Neutral",
+        "1": "Positive",
+        "2": "Negative"
+      },
+      "mapping": {
+        "0: Neutral": "negative",
+        "1: Positive": "neutral",
+        "2: Negative": "positive"
+      },
+      "labels_key": "{\"0\": \"negative\", \"1\": \"neutral\", \"2\": \"positive\"}",
+      "truncated": 4,
+      "token_length_median": 18.0,
+      "label_shares": {
+        "negative": 0.1896,
+        "neutral": 0.3452,
+        "positive": 0.4652
+      },
+      "mean_score": 0.28002944588661194,
+      "sanity_correct": 4,
+      "sanity_total": 4,
+      "seconds": 149.2,
+      "most_positive": [
+        "Bitcoin Price Analysis: Bitcoin Holds The Crucial Support Line, Preparing For a Huge Move This Week",
+        "Bitcoin Futures Open Interest on CME Spikes Again, Rising 30% This Week in Total",
+        "Bitcoin Enters Historically Strong Quarter With 3% Price Gain"
+      ],
+      "most_negative": [
+        "China crypto crime: Still ‘top ranked’ for illicit activity, but crime is falling",
+        "Coinbase fires back at senators asking SEC to halt crypto ETF approvals",
+        "What Causes a Crypto Flash Crash? Sometimes, Business as Usual"
+      ],
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.2",
+        "huggingface-hub": "1.31.0"
+      }
+    },
+    {
+      "language": "en",
+      "model": "ElKulako/cryptobert",
+      "revision": "9e37c910fe87727cb842a9ac55c6388256fe0f15",
+      "slug": "ElKulako__cryptobert@9e37c910",
+      "file": "ElKulako__cryptobert@9e37c910.parquet",
+      "news_sha256": "91e605e98e9b85e4954ee2d5b33fab68840936e7b07eb56565687a49a193842c",
+      "records": 116913,
+      "max_length": 128,
+      "batch_size": 64,
+      "device": "Tesla T4",
+      "parameters": 124647939,
+      "id2label": {
+        "0": "Bearish",
+        "1": "Neutral",
+        "2": "Bullish"
+      },
+      "mapping": {
+        "Bearish": "negative",
+        "Neutral": "neutral",
+        "Bullish": "positive"
+      },
+      "truncated": 4,
+      "token_length_median": 18.0,
+      "label_shares": {
+        "negative": 0.0431,
+        "neutral": 0.7027,
+        "positive": 0.2541
+      },
+      "mean_score": 0.28957608342170715,
+      "sanity_correct": 0,
+      "sanity_total": 4,
+      "seconds": 163.3,
+      "most_positive": [
+        "Adopting a decentralized way of life, from small steps to giant leaps",
+        "Large companies are preparing for the new stage of bitcoin growth, while the rest of the investors are still \"sleeping\"",
+        "Mainnet token swap on aelf: Inaugural activation of an all-connected ecology"
+      ],
+      "most_negative": [
+        "As the number of transactions on Bitcoin grows, the transaction value shrinks",
+        "Tether took second place in the daily volume of trading",
+        "What's Next for Bitcoin Cash? Stopping User Fund Loss"
+      ],
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.2",
+        "huggingface-hub": "1.31.0"
+      }
+    },
+    {
+      "language": "ru",
+      "model": "blanchefort/rubert-base-cased-sentiment",
+      "revision": "2d4b5fc431489a87ca4e44b842d904058706e8d4",
+      "slug": "blanchefort__rubert-base-cased-sentiment@2d4b5fc4",
+      "file": "blanchefort__rubert-base-cased-sentiment@2d4b5fc4.parquet",
+      "news_sha256": "e620dd21fb336ea01eff3b3e60218c218e258e832aa8f78f717f89fa56301dcf",
+      "records": 56383,
+      "max_length": 128,
+      "batch_size": 64,
+      "device": "Tesla T4",
+      "parameters": 177855747,
+      "id2label": {
+        "0": "NEUTRAL",
+        "1": "POSITIVE",
+        "2": "NEGATIVE"
+      },
+      "mapping": {
+        "NEUTRAL": "neutral",
+        "POSITIVE": "positive",
+        "NEGATIVE": "negative"
+      },
+      "truncated": 0,
+      "token_length_median": 15.0,
+      "label_shares": {
+        "negative": 0.0533,
+        "neutral": 0.9439,
+        "positive": 0.0028
+      },
+      "mean_score": 0.05684344097971916,
+      "sanity_correct": 0,
+      "sanity_total": 4,
+      "seconds": 71.0,
+      "most_positive": [
+        "Вестник dApps: эффект Coinbase, эффект Макафи и скрытый соперник Ethereum",
+        "Вестник DeFi: dYdX обошла Coinbase по объему торгов, а Compound потерял миллионы",
+        "Исследование: в 2019 году объем транзакций dApps достиг $10 млрд"
+      ],
+      "most_negative": [
+        "Кевин О’Лири заявил о революционном потенциале ИИ и блокчейна для бизнеса",
+        "CryptoRank: на криптобиржах сосредоточено 6,5% от рыночного предложения биткоина",
+        "F2Pool объявил о поддержке SegWit"
+      ],
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.2",
+        "huggingface-hub": "1.31.0"
+      }
+    },
+    {
+      "language": "ru",
+      "model": "seara/rubert-base-cased-russian-sentiment",
+      "revision": "d09619927897994a405b7a087b2bb04c5921e3f7",
+      "slug": "seara__rubert-base-cased-russian-sentiment@d0961992",
+      "file": "seara__rubert-base-cased-russian-sentiment@d0961992.parquet",
+      "news_sha256": "e620dd21fb336ea01eff3b3e60218c218e258e832aa8f78f717f89fa56301dcf",
+      "records": 56383,
+      "max_length": 128,
+      "batch_size": 64,
+      "device": "Tesla T4",
+      "parameters": 177855747,
+      "id2label": {
+        "0": "neutral",
+        "1": "positive",
+        "2": "negative"
+      },
+      "mapping": {
+        "neutral": "neutral",
+        "positive": "positive",
+        "negative": "negative"
+      },
+      "truncated": 0,
+      "token_length_median": 15.0,
+      "label_shares": {
+        "negative": 0.0343,
+        "neutral": 0.9584,
+        "positive": 0.0073
+      },
+      "mean_score": -0.04307692125439644,
+      "sanity_correct": 1,
+      "sanity_total": 4,
+      "seconds": 72.5,
+      "most_positive": [
+        "Премудрые киты",
+        "Илон Маск восхитился «собачьей монетой»",
+        "Ричард Брэнсон: меня завораживает путешествие в мир биткоина и блокчейна"
+      ],
+      "most_negative": [
+        "СБУ изъяла 800 кг серебра у биткоин-обменника. Бизнес-партнер подозреваемых заявил о беспределе",
+        "Мошенники пытали и убили своего главаря, чтобы получить доступ к биткоин-кошельку с $63 млн",
+        "Мошенники похитили 15 000 ETH через фейковую группу Huobi в Telegram"
+      ],
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.2",
+        "huggingface-hub": "1.31.0"
+      }
+    },
+    {
+      "language": "ru",
+      "model": "mxlcw/rubert-tiny2-russian-financial-sentiment",
+      "revision": "a02913e44597582218db7821d52dc15c331bf427",
+      "slug": "mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4",
+      "file": "mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4.parquet",
+      "news_sha256": "e620dd21fb336ea01eff3b3e60218c218e258e832aa8f78f717f89fa56301dcf",
+      "records": 56383,
+      "max_length": 128,
+      "batch_size": 64,
+      "device": "Tesla T4",
+      "parameters": 29194707,
+      "id2label": {
+        "0": "neutral",
+        "1": "positive",
+        "2": "negative"
+      },
+      "mapping": {
+        "neutral": "neutral",
+        "positive": "positive",
+        "negative": "negative"
+      },
+      "truncated": 0,
+      "token_length_median": 15.0,
+      "label_shares": {
+        "negative": 0.177,
+        "neutral": 0.6303,
+        "positive": 0.1927
+      },
+      "mean_score": 0.029829634353518486,
+      "sanity_correct": 3,
+      "sanity_total": 4,
+      "seconds": 19.9,
+      "most_positive": [
+        "EOS достиг абсолютного максимума и продолжил ралли",
+        "Биткоин вырос до $82 000. Аналитики ждут продолжения ралли",
+        "Биткоин поднялся выше $111 000 после «замечательной» встречи Трампа и Си"
+      ],
+      "most_negative": [
+        "Американец обвинил T-Mobile в халатности после потери $55 000 в биткоине",
+        "Инвесторов FTX возмутила скидочная продажа SOL биржи на $1,9 млрд",
+        "Убытки от криптовзломов в первом полугодии упали ниже $1 млрд"
+      ],
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.17.0",
+        "tokenizers": "0.23.2",
+        "huggingface-hub": "1.31.0"
+      }
+    }
+  ],
+  "failures": []
+}

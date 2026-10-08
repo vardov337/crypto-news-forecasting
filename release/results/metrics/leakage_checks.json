@@ -1,0 +1,287 @@
+{
+  "manifest": {
+    "time_utc": "2026-10-06T19:22:36+00:00",
+    "python": "3.13.15",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "git_commit": "568b018040e453343929ebdbbe804f0db010c23a",
+    "git_dirty": true,
+    "config_path": "/content/repo/configs/config.yaml",
+    "config_sha256": "b7fd07192daf10262c1cf831fabc637e78c20000d91292112666391dd794c9e0",
+    "protocol_version": "0.1-draft",
+    "packages": {
+      "numpy": "2.1.3",
+      "pandas": "2.2.3",
+      "pyarrow": "23.0.1",
+      "pyyaml": "6.0.3",
+      "requests": "2.32.4",
+      "beautifulsoup4": "4.13.5",
+      "scikit-learn": "1.6.1",
+      "xgboost": "3.4.1",
+      "statsmodels": "0.15.0",
+      "arch": "8.0.0",
+      "torch": "2.11.0+cu130",
+      "transformers": "5.18.0",
+      "tokenizers": "0.23.2",
+      "huggingface-hub": "1.33.0",
+      "openpyxl": "3.1.5",
+      "matplotlib": "3.10.0"
+    },
+    "inputs": {}
+  },
+  "model": "xgboost",
+  "seed": 0,
+  "assets": {
+    "BTCUSDT": {
+      "shift": [
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 0,
+          "rows": 17544,
+          "rmse": 0.005177262814180461,
+          "mse_change_vs_price_pct": -0.12302387099125678,
+          "dir_accuracy": 0.5058997890896654
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 1,
+          "rows": 17544,
+          "rmse": 0.005178947975841009,
+          "mse_change_vs_price_pct": -0.05799482045092397,
+          "dir_accuracy": 0.5121700963347204
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 2,
+          "rows": 17544,
+          "rmse": 0.005181500863519953,
+          "mse_change_vs_price_pct": 0.040559402834960956,
+          "dir_accuracy": 0.5125691158866784
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 3,
+          "rows": 17544,
+          "rmse": 0.005180911197117757,
+          "mse_change_vs_price_pct": 0.017791019055146684,
+          "dir_accuracy": 0.5082939064014137
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 24,
+          "rows": 17544,
+          "rmse": 0.005178804924587101,
+          "mse_change_vs_price_pct": -0.06351587676373116,
+          "dir_accuracy": 0.512341104714131
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 0,
+          "rows": 17544,
+          "rmse": 0.005177906948377251,
+          "mse_change_vs_price_pct": -0.09816974238875398,
+          "dir_accuracy": 0.5076098728837714
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 1,
+          "rows": 17544,
+          "rmse": 0.00517814376048777,
+          "mse_change_vs_price_pct": -0.08903149231840324,
+          "dir_accuracy": 0.5094909650572879
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 2,
+          "rows": 17544,
+          "rmse": 0.005178127879561916,
+          "mse_change_vs_price_pct": -0.08964432823921342,
+          "dir_accuracy": 0.5065268198141709
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 3,
+          "rows": 17544,
+          "rmse": 0.005178799197037505,
+          "mse_change_vs_price_pct": -0.0637369280916289,
+          "dir_accuracy": 0.5096049706435616
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 24,
+          "rows": 17544,
+          "rmse": 0.005179580633512425,
+          "mse_change_vs_price_pct": -0.033575599178758964,
+          "dir_accuracy": 0.5138801801288263
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 0,
+          "rows": 17544,
+          "rmse": 0.005181792014860847,
+          "mse_change_vs_price_pct": 0.05180238517172864,
+          "dir_accuracy": 0.5078378840563188
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 1,
+          "rows": 17544,
+          "rmse": 0.005177733213160161,
+          "mse_change_vs_price_pct": -0.1048736770705827,
+          "dir_accuracy": 0.50817990081514
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 2,
+          "rows": 17544,
+          "rmse": 0.005174566746448158,
+          "mse_change_vs_price_pct": -0.2270189701353842,
+          "dir_accuracy": 0.5057857835033917
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 3,
+          "rows": 17544,
+          "rmse": 0.005176292820132614,
+          "mse_change_vs_price_pct": -0.16044557442078666,
+          "dir_accuracy": 0.5092629538847403
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 24,
+          "rows": 17544,
+          "rmse": 0.005181907599343444,
+          "mse_change_vs_price_pct": 0.05626592394591956,
+          "dir_accuracy": 0.5137091717494158
+        }
+      ],
+      "placebo_mean_accuracy": 0.5054847046924504,
+      "placebo_chance_accuracy": 0.5054080355954182
+    },
+    "ETHUSDT": {
+      "shift": [
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 0,
+          "rows": 17544,
+          "rmse": 0.006704029031500272,
+          "mse_change_vs_price_pct": -0.009321801905404214,
+          "dir_accuracy": 0.5066727500855481
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 1,
+          "rows": 17544,
+          "rmse": 0.006703123482703944,
+          "mse_change_vs_price_pct": -0.036332521151061226,
+          "dir_accuracy": 0.5074141667617201
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 2,
+          "rows": 17544,
+          "rmse": 0.006703292853875378,
+          "mse_change_vs_price_pct": -0.03128079342827883,
+          "dir_accuracy": 0.5094673206341964
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 3,
+          "rows": 17544,
+          "rmse": 0.006706051366302856,
+          "mse_change_vs_price_pct": 0.05101359565837793,
+          "dir_accuracy": 0.5073001026576937
+        },
+        {
+          "feature_set": "P_EN",
+          "shift_hours": 24,
+          "rows": 17544,
+          "rmse": 0.006705675962528941,
+          "mse_change_vs_price_pct": 0.039812226999536016,
+          "dir_accuracy": 0.5064446218774952
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 0,
+          "rows": 17544,
+          "rmse": 0.006702089852042529,
+          "mse_change_vs_price_pct": -0.06715920830181465,
+          "dir_accuracy": 0.5075282308657465
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 1,
+          "rows": 17544,
+          "rmse": 0.006702291248837477,
+          "mse_change_vs_price_pct": -0.06115318430520711,
+          "dir_accuracy": 0.5071860385536672
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 2,
+          "rows": 17544,
+          "rmse": 0.0067026071984497655,
+          "mse_change_vs_price_pct": -0.05173062029597553,
+          "dir_accuracy": 0.5075282308657465
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 3,
+          "rows": 17544,
+          "rmse": 0.0067036757283899405,
+          "mse_change_vs_price_pct": -0.019860564961649008,
+          "dir_accuracy": 0.5081555834378921
+        },
+        {
+          "feature_set": "P_RU",
+          "shift_hours": 24,
+          "rows": 17544,
+          "rmse": 0.006704946875218737,
+          "mse_change_vs_price_pct": 0.018059373783985144,
+          "dir_accuracy": 0.5114634424546595
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 0,
+          "rows": 17544,
+          "rmse": 0.006703653711994616,
+          "mse_change_vs_price_pct": -0.02051727890454158,
+          "dir_accuracy": 0.5072430706056804
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 1,
+          "rows": 17544,
+          "rmse": 0.006703951674193325,
+          "mse_change_vs_price_pct": -0.01162935902426776,
+          "dir_accuracy": 0.5095243526862097
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 2,
+          "rows": 17544,
+          "rmse": 0.006703488110474789,
+          "mse_change_vs_price_pct": -0.025456838881643407,
+          "dir_accuracy": 0.505931333409376
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 3,
+          "rows": 17544,
+          "rmse": 0.0067046059021386665,
+          "mse_change_vs_price_pct": 0.007887004262219222,
+          "dir_accuracy": 0.5081555834378921
+        },
+        {
+          "feature_set": "P_EN_RU",
+          "shift_hours": 24,
+          "rows": 17544,
+          "rmse": 0.0067093869226581525,
+          "mse_change_vs_price_pct": 0.1505680943606258,
+          "dir_accuracy": 0.5055321090452835
+        }
+      ],
+      "placebo_mean_accuracy": 0.501857672522293,
+      "placebo_chance_accuracy": 0.5008367363441779
+    }
+  }
+}

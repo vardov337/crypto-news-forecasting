@@ -1,0 +1,186 @@
+{
+  "window": {
+    "name": "tuning",
+    "train_end": "2023-02-28 23:00:00+00:00",
+    "test_start": "2023-03-01 00:00:00+00:00",
+    "test_end": "2023-06-01 00:00:00+00:00"
+  },
+  "seed": 0,
+  "results": [
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 5,
+        "min_samples_leaf": 50,
+        "max_features": "sqrt"
+      },
+      "mse": 2.9926685281438323e-05,
+      "rows": 2182,
+      "seconds": 0.8,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 5,
+        "min_samples_leaf": 50,
+        "max_features": 0.5
+      },
+      "mse": 2.9872602616521267e-05,
+      "rows": 2182,
+      "seconds": 0.9,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 5,
+        "min_samples_leaf": 200,
+        "max_features": "sqrt"
+      },
+      "mse": 2.9990719445027366e-05,
+      "rows": 2182,
+      "seconds": 0.6,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 5,
+        "min_samples_leaf": 200,
+        "max_features": 0.5
+      },
+      "mse": 2.995223261089965e-05,
+      "rows": 2182,
+      "seconds": 0.6,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 10,
+        "min_samples_leaf": 50,
+        "max_features": "sqrt"
+      },
+      "mse": 2.9923388989625658e-05,
+      "rows": 2182,
+      "seconds": 1.7,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 10,
+        "min_samples_leaf": 50,
+        "max_features": 0.5
+      },
+      "mse": 2.9895042953181252e-05,
+      "rows": 2182,
+      "seconds": 1.6,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 10,
+        "min_samples_leaf": 200,
+        "max_features": "sqrt"
+      },
+      "mse": 3.0007757510553534e-05,
+      "rows": 2182,
+      "seconds": 1.4,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 10,
+        "min_samples_leaf": 200,
+        "max_features": 0.5
+      },
+      "mse": 2.9976754193310572e-05,
+      "rows": 2182,
+      "seconds": 1.4,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": null,
+        "min_samples_leaf": 50,
+        "max_features": "sqrt"
+      },
+      "mse": 3.0000516414580167e-05,
+      "rows": 2182,
+      "seconds": 29.5,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": null,
+        "min_samples_leaf": 50,
+        "max_features": 0.5
+      },
+      "mse": 2.9978190873911352e-05,
+      "rows": 2182,
+      "seconds": 30.2,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": null,
+        "min_samples_leaf": 200,
+        "max_features": "sqrt"
+      },
+      "mse": 3.0022727357011682e-05,
+      "rows": 2182,
+      "seconds": 7.7,
+      "info": {
+        "device": "cuda"
+      }
+    },
+    {
+      "params": {
+        "n_estimators": 300,
+        "max_depth": null,
+        "min_samples_leaf": 200,
+        "max_features": 0.5
+      },
+      "mse": 3.003797324577922e-05,
+      "rows": 2182,
+      "seconds": 8.1,
+      "info": {
+        "device": "cuda"
+      }
+    }
+  ],
+  "chosen": {
+    "n_estimators": 300,
+    "max_depth": 5,
+    "min_samples_leaf": 50,
+    "max_features": 0.5
+  },
+  "git_commit": "47c5cf44e446f701255937e6ec94fc160177b6de"
+}

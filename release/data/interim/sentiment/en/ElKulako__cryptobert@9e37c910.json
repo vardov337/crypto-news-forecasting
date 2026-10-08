@@ -1,0 +1,50 @@
+{
+  "language": "en",
+  "model": "ElKulako/cryptobert",
+  "revision": "9e37c910fe87727cb842a9ac55c6388256fe0f15",
+  "slug": "ElKulako__cryptobert@9e37c910",
+  "file": "ElKulako__cryptobert@9e37c910.parquet",
+  "news_sha256": "91e605e98e9b85e4954ee2d5b33fab68840936e7b07eb56565687a49a193842c",
+  "records": 116913,
+  "max_length": 128,
+  "batch_size": 64,
+  "device": "Tesla T4",
+  "parameters": 124647939,
+  "id2label": {
+    "0": "Bearish",
+    "1": "Neutral",
+    "2": "Bullish"
+  },
+  "mapping": {
+    "Bearish": "negative",
+    "Neutral": "neutral",
+    "Bullish": "positive"
+  },
+  "truncated": 4,
+  "token_length_median": 18.0,
+  "label_shares": {
+    "negative": 0.0431,
+    "neutral": 0.7027,
+    "positive": 0.2541
+  },
+  "mean_score": 0.28957608342170715,
+  "sanity_correct": 0,
+  "sanity_total": 4,
+  "seconds": 163.3,
+  "most_positive": [
+    "Adopting a decentralized way of life, from small steps to giant leaps",
+    "Large companies are preparing for the new stage of bitcoin growth, while the rest of the investors are still \"sleeping\"",
+    "Mainnet token swap on aelf: Inaugural activation of an all-connected ecology"
+  ],
+  "most_negative": [
+    "As the number of transactions on Bitcoin grows, the transaction value shrinks",
+    "Tether took second place in the daily volume of trading",
+    "What's Next for Bitcoin Cash? Stopping User Fund Loss"
+  ],
+  "packages": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.2",
+    "huggingface-hub": "1.31.0"
+  }
+}

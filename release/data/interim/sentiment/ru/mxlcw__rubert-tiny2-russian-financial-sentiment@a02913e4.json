@@ -1,0 +1,50 @@
+{
+  "language": "ru",
+  "model": "mxlcw/rubert-tiny2-russian-financial-sentiment",
+  "revision": "a02913e44597582218db7821d52dc15c331bf427",
+  "slug": "mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4",
+  "file": "mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4.parquet",
+  "news_sha256": "e620dd21fb336ea01eff3b3e60218c218e258e832aa8f78f717f89fa56301dcf",
+  "records": 56383,
+  "max_length": 128,
+  "batch_size": 64,
+  "device": "Tesla T4",
+  "parameters": 29194707,
+  "id2label": {
+    "0": "neutral",
+    "1": "positive",
+    "2": "negative"
+  },
+  "mapping": {
+    "neutral": "neutral",
+    "positive": "positive",
+    "negative": "negative"
+  },
+  "truncated": 0,
+  "token_length_median": 15.0,
+  "label_shares": {
+    "negative": 0.177,
+    "neutral": 0.6303,
+    "positive": 0.1927
+  },
+  "mean_score": 0.029829634353518486,
+  "sanity_correct": 3,
+  "sanity_total": 4,
+  "seconds": 19.9,
+  "most_positive": [
+    "EOS достиг абсолютного максимума и продолжил ралли",
+    "Биткоин вырос до $82 000. Аналитики ждут продолжения ралли",
+    "Биткоин поднялся выше $111 000 после «замечательной» встречи Трампа и Си"
+  ],
+  "most_negative": [
+    "Американец обвинил T-Mobile в халатности после потери $55 000 в биткоине",
+    "Инвесторов FTX возмутила скидочная продажа SOL биржи на $1,9 млрд",
+    "Убытки от криптовзломов в первом полугодии упали ниже $1 млрд"
+  ],
+  "packages": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.2",
+    "huggingface-hub": "1.31.0"
+  }
+}

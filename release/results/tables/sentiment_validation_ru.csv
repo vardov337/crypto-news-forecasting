@@ -1,0 +1,4 @@
+model,revision,slug,n,accuracy,macro_f1,f1_negative,f1_neutral,f1_positive,macro_f1_ci_low,macro_f1_ci_high,diff_vs_best,diff_ci_low,diff_ci_high,chosen
+blanchefort/rubert-base-cased-sentiment,2d4b5fc431489a87ca4e44b842d904058706e8d4,blanchefort__rubert-base-cased-sentiment@2d4b5fc4,400,0.2625,0.1675,0.0863,0.405,0.0113,0.139,0.1979,0.3027,0.246,0.3528,False
+seara/rubert-base-cased-russian-sentiment,d09619927897994a405b7a087b2bb04c5921e3f7,seara__rubert-base-cased-russian-sentiment@d0961992,400,0.3025,0.2199,0.2059,0.4312,0.0226,0.182,0.2594,0.2503,0.1944,0.3024,False
+mxlcw/rubert-tiny2-russian-financial-sentiment,a02913e44597582218db7821d52dc15c331bf427,mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4,400,0.46,0.4702,0.5492,0.4358,0.4257,0.4177,0.5174,0.0,0.0,0.0,True

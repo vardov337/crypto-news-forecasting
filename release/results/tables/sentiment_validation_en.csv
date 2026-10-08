@@ -1,0 +1,4 @@
+model,revision,slug,n,accuracy,macro_f1,f1_negative,f1_neutral,f1_positive,macro_f1_ci_low,macro_f1_ci_high,diff_vs_best,diff_ci_low,diff_ci_high,chosen
+ProsusAI/finbert,4556d13015211d73dccd3fdd39d39232506f3e43,ProsusAI__finbert@4556d130,400,0.46,0.4674,0.5085,0.4426,0.4511,0.4181,0.5165,0.0,0.0,0.0,True
+burakutf/finetuned-finbert-crypto,24ca955d09a693342a25e6a22249346431cd778c,burakutf__finetuned-finbert-crypto@24ca955d,400,0.4625,0.4468,0.4405,0.3462,0.5538,0.3954,0.4976,0.0206,-0.0393,0.0814,False
+ElKulako/cryptobert,9e37c910fe87727cb842a9ac55c6388256fe0f15,ElKulako__cryptobert@9e37c910,400,0.3575,0.3053,0.1138,0.4086,0.3934,0.2615,0.348,0.1621,0.0977,0.2253,False

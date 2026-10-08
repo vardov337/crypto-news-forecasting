@@ -1,0 +1,315 @@
+{
+  "manifest": {
+    "time_utc": "2026-10-02T06:24:23+00:00",
+    "python": "3.13.15",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "git_commit": "3e75d24d2012a00e2dde9d2c6c3c914ef60b0f40",
+    "git_dirty": true,
+    "config_path": "/content/repo/configs/config.yaml",
+    "config_sha256": "f99511317df1635b39e30f6780dc3cf42b3b16660b0a47270e291ec1eaa4d2fc",
+    "protocol_version": "0.1-draft",
+    "packages": {
+      "numpy": "2.1.3",
+      "pandas": "2.2.3",
+      "pyarrow": "23.0.1",
+      "pyyaml": "6.0.3",
+      "requests": "2.32.4",
+      "beautifulsoup4": "4.13.5",
+      "scikit-learn": "1.6.1",
+      "xgboost": "3.4.1",
+      "statsmodels": "0.15.0",
+      "arch": "8.0.0",
+      "torch": "2.11.0+cu130",
+      "transformers": "5.17.0",
+      "tokenizers": "0.23.2",
+      "huggingface-hub": "1.31.0",
+      "openpyxl": "3.1.5",
+      "matplotlib": "3.10.0"
+    },
+    "inputs": {}
+  },
+  "files": [
+    {
+      "file": "CryptoDataSet.csv",
+      "rows": 188431,
+      "used": true,
+      "columns": {
+        "url": "URL",
+        "title": "Title",
+        "date_time": "Date Time",
+        "coin_type": "Coin Type",
+        "open": "Open",
+        "high": "High",
+        "low": "Low",
+        "close": "Close"
+      },
+      "sha256": "cfb21896c54e05348dcdda32364b8ea4cf1d5565c85f266d6492e0433315ab30"
+    }
+  ],
+  "share_with_tz_suffix": 0.9999840790528097,
+  "timezone": {
+    "sample_months": [
+      "2017-09",
+      "2018-03",
+      "2018-10",
+      "2019-04",
+      "2019-10",
+      "2020-05",
+      "2020-11",
+      "2021-05",
+      "2021-12",
+      "2022-06",
+      "2022-12",
+      "2023-07",
+      "2024-01",
+      "2024-07",
+      "2025-02",
+      "2025-08"
+    ],
+    "records_imprecise": 148,
+    "records_checked": 24994,
+    "records_matched": 17074,
+    "best_offset_minutes": 0,
+    "best_share": 0.9998828628323767,
+    "runner_up_share": 5.856858381164344e-05,
+    "best_rule": "ближайшая свеча",
+    "rule_shares": {
+      "свеча, содержащая новость": 0.6129202295888485,
+      "следующая свеча": 0.536956776385147,
+      "ближайшая свеча": 0.9998828628323767
+    },
+    "outside_before": 0.0,
+    "outside_after": 0.00011713716762328687,
+    "candidates": [
+      {
+        "offset_minutes": 0,
+        "share": 0.9998828628323767
+      },
+      {
+        "offset_minutes": -90,
+        "share": 5.856858381164344e-05
+      },
+      {
+        "offset_minutes": -30,
+        "share": 5.856858381164344e-05
+      },
+      {
+        "offset_minutes": -690,
+        "share": 0.0
+      },
+      {
+        "offset_minutes": -720,
+        "share": 0.0
+      }
+    ],
+    "top_deltas": [
+      {
+        "delta_min": 0,
+        "count": 3463
+      },
+      {
+        "delta_min": -1,
+        "count": 1510
+      },
+      {
+        "delta_min": -5,
+        "count": 1205
+      },
+      {
+        "delta_min": 5,
+        "count": 1050
+      },
+      {
+        "delta_min": -7,
+        "count": 936
+      },
+      {
+        "delta_min": -2,
+        "count": 922
+      },
+      {
+        "delta_min": 2,
+        "count": 921
+      },
+      {
+        "delta_min": 4,
+        "count": 916
+      },
+      {
+        "delta_min": -4,
+        "count": 911
+      },
+      {
+        "delta_min": 3,
+        "count": 908
+      }
+    ],
+    "per_month": [
+      {
+        "month": "2017-09",
+        "matched": 111,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2018-03",
+        "matched": 303,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2018-10",
+        "matched": 460,
+        "best_offset_minutes": 0,
+        "share": 0.996,
+        "agrees": true
+      },
+      {
+        "month": "2019-04",
+        "matched": 722,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2019-10",
+        "matched": 717,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2020-05",
+        "matched": 1340,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2020-11",
+        "matched": 1268,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2021-05",
+        "matched": 1713,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2021-12",
+        "matched": 1254,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2022-06",
+        "matched": 1092,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2022-12",
+        "matched": 1165,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2023-07",
+        "matched": 1361,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2024-01",
+        "matched": 1181,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2024-07",
+        "matched": 1758,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2025-02",
+        "matched": 1805,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      },
+      {
+        "month": "2025-08",
+        "matched": 824,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "agrees": true
+      }
+    ],
+    "per_source": [
+      {
+        "source": "blockworks.co",
+        "matched": 1124,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "share_at_global": 1.0,
+        "agrees": true
+      },
+      {
+        "source": "coindesk.com",
+        "matched": 5023,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "share_at_global": 1.0,
+        "agrees": true
+      },
+      {
+        "source": "cointelegraph.com",
+        "matched": 4049,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "share_at_global": 1.0,
+        "agrees": true
+      },
+      {
+        "source": "cryptonews.com",
+        "matched": 1403,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "share_at_global": 1.0,
+        "agrees": true
+      },
+      {
+        "source": "cryptopanic.com",
+        "matched": 3446,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "share_at_global": 1.0,
+        "agrees": true
+      },
+      {
+        "source": "decrypt.co",
+        "matched": 2029,
+        "best_offset_minutes": 0,
+        "share": 1.0,
+        "share_at_global": 1.0,
+        "agrees": true
+      }
+    ],
+    "months_agreeing": 1.0,
+    "verdict": "Надёжно: UTC+00:00; в пределах одной свечи от метки 100.0% совпадений, согласны 100% месяцев и все крупные источники; набор брал «ближайшая свеча»",
+    "offset_label": "UTC+00:00"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "language": "ru",
+  "model": "seara/rubert-base-cased-russian-sentiment",
+  "revision": "d09619927897994a405b7a087b2bb04c5921e3f7",
+  "slug": "seara__rubert-base-cased-russian-sentiment@d0961992",
+  "file": "seara__rubert-base-cased-russian-sentiment@d0961992.parquet",
+  "news_sha256": "e620dd21fb336ea01eff3b3e60218c218e258e832aa8f78f717f89fa56301dcf",
+  "records": 56383,
+  "max_length": 128,
+  "batch_size": 64,
+  "device": "Tesla T4",
+  "parameters": 177855747,
+  "id2label": {
+    "0": "neutral",
+    "1": "positive",
+    "2": "negative"
+  },
+  "mapping": {
+    "neutral": "neutral",
+    "positive": "positive",
+    "negative": "negative"
+  },
+  "truncated": 0,
+  "token_length_median": 15.0,
+  "label_shares": {
+    "negative": 0.0343,
+    "neutral": 0.9584,
+    "positive": 0.0073
+  },
+  "mean_score": -0.04307692125439644,
+  "sanity_correct": 1,
+  "sanity_total": 4,
+  "seconds": 72.5,
+  "most_positive": [
+    "Премудрые киты",
+    "Илон Маск восхитился «собачьей монетой»",
+    "Ричард Брэнсон: меня завораживает путешествие в мир биткоина и блокчейна"
+  ],
+  "most_negative": [
+    "СБУ изъяла 800 кг серебра у биткоин-обменника. Бизнес-партнер подозреваемых заявил о беспределе",
+    "Мошенники пытали и убили своего главаря, чтобы получить доступ к биткоин-кошельку с $63 млн",
+    "Мошенники похитили 15 000 ETH через фейковую группу Huobi в Telegram"
+  ],
+  "packages": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.2",
+    "huggingface-hub": "1.31.0"
+  }
+}

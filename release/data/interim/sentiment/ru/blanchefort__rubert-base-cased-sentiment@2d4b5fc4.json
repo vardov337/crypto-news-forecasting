@@ -1,0 +1,50 @@
+{
+  "language": "ru",
+  "model": "blanchefort/rubert-base-cased-sentiment",
+  "revision": "2d4b5fc431489a87ca4e44b842d904058706e8d4",
+  "slug": "blanchefort__rubert-base-cased-sentiment@2d4b5fc4",
+  "file": "blanchefort__rubert-base-cased-sentiment@2d4b5fc4.parquet",
+  "news_sha256": "e620dd21fb336ea01eff3b3e60218c218e258e832aa8f78f717f89fa56301dcf",
+  "records": 56383,
+  "max_length": 128,
+  "batch_size": 64,
+  "device": "Tesla T4",
+  "parameters": 177855747,
+  "id2label": {
+    "0": "NEUTRAL",
+    "1": "POSITIVE",
+    "2": "NEGATIVE"
+  },
+  "mapping": {
+    "NEUTRAL": "neutral",
+    "POSITIVE": "positive",
+    "NEGATIVE": "negative"
+  },
+  "truncated": 0,
+  "token_length_median": 15.0,
+  "label_shares": {
+    "negative": 0.0533,
+    "neutral": 0.9439,
+    "positive": 0.0028
+  },
+  "mean_score": 0.05684344097971916,
+  "sanity_correct": 0,
+  "sanity_total": 4,
+  "seconds": 71.0,
+  "most_positive": [
+    "Вестник dApps: эффект Coinbase, эффект Макафи и скрытый соперник Ethereum",
+    "Вестник DeFi: dYdX обошла Coinbase по объему торгов, а Compound потерял миллионы",
+    "Исследование: в 2019 году объем транзакций dApps достиг $10 млрд"
+  ],
+  "most_negative": [
+    "Кевин О’Лири заявил о революционном потенциале ИИ и блокчейна для бизнеса",
+    "CryptoRank: на криптобиржах сосредоточено 6,5% от рыночного предложения биткоина",
+    "F2Pool объявил о поддержке SegWit"
+  ],
+  "packages": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.2",
+    "huggingface-hub": "1.31.0"
+  }
+}

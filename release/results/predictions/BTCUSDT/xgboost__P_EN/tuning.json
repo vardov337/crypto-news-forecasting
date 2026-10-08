@@ -1,0 +1,156 @@
+{
+  "window": {
+    "name": "tuning",
+    "train_end": "2023-02-28 23:00:00+00:00",
+    "test_start": "2023-03-01 00:00:00+00:00",
+    "test_end": "2023-06-01 00:00:00+00:00"
+  },
+  "seed": 0,
+  "results": [
+    {
+      "params": {
+        "learning_rate": 0.01,
+        "max_depth": 3,
+        "min_child_weight": 10,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.0076542409475528e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 0
+      }
+    },
+    {
+      "params": {
+        "learning_rate": 0.01,
+        "max_depth": 3,
+        "min_child_weight": 50,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.0076542409475528e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 0
+      }
+    },
+    {
+      "params": {
+        "learning_rate": 0.01,
+        "max_depth": 5,
+        "min_child_weight": 10,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.007063227336192e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 4
+      }
+    },
+    {
+      "params": {
+        "learning_rate": 0.01,
+        "max_depth": 5,
+        "min_child_weight": 50,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.0074556661260798e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 0
+      }
+    },
+    {
+      "params": {
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "min_child_weight": 10,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.0080327557190796e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 0
+      }
+    },
+    {
+      "params": {
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "min_child_weight": 50,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.0080327557190796e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 0
+      }
+    },
+    {
+      "params": {
+        "learning_rate": 0.05,
+        "max_depth": 5,
+        "min_child_weight": 10,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.006753613679965e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 5
+      }
+    },
+    {
+      "params": {
+        "learning_rate": 0.05,
+        "max_depth": 5,
+        "min_child_weight": 50,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "mse": 3.0070466246925452e-05,
+      "rows": 2182,
+      "seconds": 0.2,
+      "info": {
+        "device": "cuda",
+        "best_iteration": 0
+      }
+    }
+  ],
+  "chosen": {
+    "learning_rate": 0.05,
+    "max_depth": 5,
+    "min_child_weight": 10,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 1.0
+  },
+  "git_commit": "47c5cf44e446f701255937e6ec94fc160177b6de"
+}

@@ -1,0 +1,51 @@
+{
+  "language": "en",
+  "model": "burakutf/finetuned-finbert-crypto",
+  "revision": "24ca955d09a693342a25e6a22249346431cd778c",
+  "slug": "burakutf__finetuned-finbert-crypto@24ca955d",
+  "file": "burakutf__finetuned-finbert-crypto@24ca955d.parquet",
+  "news_sha256": "91e605e98e9b85e4954ee2d5b33fab68840936e7b07eb56565687a49a193842c",
+  "records": 116913,
+  "max_length": 128,
+  "batch_size": 64,
+  "device": "Tesla T4",
+  "parameters": 109754115,
+  "id2label": {
+    "0": "Neutral",
+    "1": "Positive",
+    "2": "Negative"
+  },
+  "mapping": {
+    "0: Neutral": "negative",
+    "1: Positive": "neutral",
+    "2: Negative": "positive"
+  },
+  "labels_key": "{\"0\": \"negative\", \"1\": \"neutral\", \"2\": \"positive\"}",
+  "truncated": 4,
+  "token_length_median": 18.0,
+  "label_shares": {
+    "negative": 0.1896,
+    "neutral": 0.3452,
+    "positive": 0.4652
+  },
+  "mean_score": 0.28002944588661194,
+  "sanity_correct": 4,
+  "sanity_total": 4,
+  "seconds": 149.2,
+  "most_positive": [
+    "Bitcoin Price Analysis: Bitcoin Holds The Crucial Support Line, Preparing For a Huge Move This Week",
+    "Bitcoin Futures Open Interest on CME Spikes Again, Rising 30% This Week in Total",
+    "Bitcoin Enters Historically Strong Quarter With 3% Price Gain"
+  ],
+  "most_negative": [
+    "China crypto crime: Still ‘top ranked’ for illicit activity, but crime is falling",
+    "Coinbase fires back at senators asking SEC to halt crypto ETF approvals",
+    "What Causes a Crypto Flash Crash? Sometimes, Business as Usual"
+  ],
+  "packages": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.2",
+    "huggingface-hub": "1.31.0"
+  }
+}

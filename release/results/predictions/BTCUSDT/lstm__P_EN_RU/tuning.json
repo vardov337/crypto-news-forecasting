@@ -1,0 +1,80 @@
+{
+  "window": {
+    "name": "tuning",
+    "train_end": "2023-02-28 23:00:00+00:00",
+    "test_start": "2023-03-01 00:00:00+00:00",
+    "test_end": "2023-06-01 00:00:00+00:00"
+  },
+  "seed": 0,
+  "results": [
+    {
+      "params": {
+        "lookback": 12,
+        "hidden_size": 32
+      },
+      "mse": 3.0197987588081988e-05,
+      "rows": 2171,
+      "seconds": 3.9,
+      "info": {
+        "device": "cuda",
+        "epochs": 6,
+        "best_val_mse_scaled": 0.3456179201602936,
+        "train_windows": 42622,
+        "val_windows": 4736
+      }
+    },
+    {
+      "params": {
+        "lookback": 12,
+        "hidden_size": 64
+      },
+      "mse": 3.0133806668346694e-05,
+      "rows": 2171,
+      "seconds": 4.4,
+      "info": {
+        "device": "cuda",
+        "epochs": 6,
+        "best_val_mse_scaled": 0.345827579498291,
+        "train_windows": 42622,
+        "val_windows": 4736
+      }
+    },
+    {
+      "params": {
+        "lookback": 24,
+        "hidden_size": 32
+      },
+      "mse": 3.029443470691525e-05,
+      "rows": 2159,
+      "seconds": 3.6,
+      "info": {
+        "device": "cuda",
+        "epochs": 6,
+        "best_val_mse_scaled": 0.34701910614967346,
+        "train_windows": 42331,
+        "val_windows": 4703
+      }
+    },
+    {
+      "params": {
+        "lookback": 24,
+        "hidden_size": 64
+      },
+      "mse": 3.026256757084429e-05,
+      "rows": 2159,
+      "seconds": 3.6,
+      "info": {
+        "device": "cuda",
+        "epochs": 6,
+        "best_val_mse_scaled": 0.34721770882606506,
+        "train_windows": 42331,
+        "val_windows": 4703
+      }
+    }
+  ],
+  "chosen": {
+    "lookback": 12,
+    "hidden_size": 64
+  },
+  "git_commit": "47c5cf44e446f701255937e6ec94fc160177b6de"
+}

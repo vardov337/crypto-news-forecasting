@@ -1,0 +1,196 @@
+{
+  "manifest": {
+    "time_utc": "2026-10-06T14:45:52+00:00",
+    "python": "3.13.16",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "git_commit": "6d4b96c51eb04ddbf6a99aa0451238eedd7e97c8",
+    "git_dirty": true,
+    "config_path": "/content/repo/configs/config.yaml",
+    "config_sha256": "c447e9a690e0014ad72b18922d0078ba9612dc02070078b5536ca376b74965d1",
+    "protocol_version": "0.1-draft",
+    "packages": {
+      "numpy": "2.1.3",
+      "pandas": "2.2.3",
+      "pyarrow": "23.0.1",
+      "pyyaml": "6.0.3",
+      "requests": "2.32.4",
+      "beautifulsoup4": "4.13.5",
+      "scikit-learn": "1.6.1",
+      "xgboost": "3.4.1",
+      "statsmodels": "0.15.0",
+      "arch": "8.0.0",
+      "torch": "2.11.0+cpu",
+      "transformers": "5.18.0",
+      "tokenizers": "0.23.2",
+      "huggingface-hub": "1.33.0",
+      "openpyxl": "3.1.5",
+      "matplotlib": "3.10.0"
+    },
+    "inputs": {}
+  },
+  "rule": "наибольший macro-F1 на разметке первого разметчика",
+  "en": {
+    "labels_file": "en_annotator1.csv",
+    "labels_sha256": "377815e8d47ad192544f983c5c48ee2adc44b6a49951047fe585f330d55339d7",
+    "n_labels": 400,
+    "agreement": {
+      "n": 100,
+      "percent_agreement": 0.72,
+      "cohen_kappa": 0.5778682345846524,
+      "confusion": [
+        [
+          24,
+          5,
+          0
+        ],
+        [
+          6,
+          16,
+          3
+        ],
+        [
+          3,
+          11,
+          32
+        ]
+      ]
+    },
+    "model": "ProsusAI/finbert",
+    "revision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+    "slug": "ProsusAI__finbert@4556d130",
+    "macro_f1": 0.4673931422107945,
+    "accuracy": 0.46,
+    "candidates": [
+      {
+        "model": "ProsusAI/finbert",
+        "revision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+        "slug": "ProsusAI__finbert@4556d130",
+        "n": 400,
+        "accuracy": 0.46,
+        "macro_f1": 0.4673931422107945,
+        "f1_negative": 0.5084745762711864,
+        "f1_neutral": 0.4425770308123249,
+        "f1_positive": 0.45112781954887216,
+        "macro_f1_ci_low": 0.41805804583120787,
+        "macro_f1_ci_high": 0.516488662705798,
+        "diff_vs_best": 0.0,
+        "diff_ci_low": 0.0,
+        "diff_ci_high": 0.0
+      },
+      {
+        "model": "burakutf/finetuned-finbert-crypto",
+        "revision": "24ca955d09a693342a25e6a22249346431cd778c",
+        "slug": "burakutf__finetuned-finbert-crypto@24ca955d",
+        "n": 400,
+        "accuracy": 0.4625,
+        "macro_f1": 0.4467978258300838,
+        "f1_negative": 0.44047619047619047,
+        "f1_neutral": 0.34615384615384615,
+        "f1_positive": 0.553763440860215,
+        "macro_f1_ci_low": 0.3954002051183402,
+        "macro_f1_ci_high": 0.49764686200709907,
+        "diff_vs_best": 0.02059531638071066,
+        "diff_ci_low": -0.03925217551959554,
+        "diff_ci_high": 0.08141038049233103
+      },
+      {
+        "model": "ElKulako/cryptobert",
+        "revision": "9e37c910fe87727cb842a9ac55c6388256fe0f15",
+        "slug": "ElKulako__cryptobert@9e37c910",
+        "n": 400,
+        "accuracy": 0.3575,
+        "macro_f1": 0.30528863723327876,
+        "f1_negative": 0.11382113821138211,
+        "f1_neutral": 0.40860215053763443,
+        "f1_positive": 0.39344262295081966,
+        "macro_f1_ci_low": 0.26152702573508746,
+        "macro_f1_ci_high": 0.34800452338457627,
+        "diff_vs_best": 0.16210450497751572,
+        "diff_ci_low": 0.0976749047210727,
+        "diff_ci_high": 0.22528115726727882
+      }
+    ]
+  },
+  "ru": {
+    "labels_file": "ru_annotator1.csv",
+    "labels_sha256": "2072390b08d3b0933477da8f931ced10c5bbd5e9f10c718e7e676dc23b25d3b8",
+    "n_labels": 400,
+    "agreement": {
+      "n": 100,
+      "percent_agreement": 0.77,
+      "cohen_kappa": 0.6297488731487444,
+      "confusion": [
+        [
+          23,
+          3,
+          0
+        ],
+        [
+          2,
+          12,
+          12
+        ],
+        [
+          0,
+          6,
+          42
+        ]
+      ]
+    },
+    "model": "mxlcw/rubert-tiny2-russian-financial-sentiment",
+    "revision": "a02913e44597582218db7821d52dc15c331bf427",
+    "slug": "mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4",
+    "macro_f1": 0.47022659970552505,
+    "accuracy": 0.46,
+    "candidates": [
+      {
+        "model": "blanchefort/rubert-base-cased-sentiment",
+        "revision": "2d4b5fc431489a87ca4e44b842d904058706e8d4",
+        "slug": "blanchefort__rubert-base-cased-sentiment@2d4b5fc4",
+        "n": 400,
+        "accuracy": 0.2625,
+        "macro_f1": 0.16752968265533252,
+        "f1_negative": 0.08633093525179857,
+        "f1_neutral": 0.4049586776859504,
+        "f1_positive": 0.011299435028248588,
+        "macro_f1_ci_low": 0.13895727672692842,
+        "macro_f1_ci_high": 0.19793504052155136,
+        "diff_vs_best": 0.3026969170501925,
+        "diff_ci_low": 0.24604840455606666,
+        "diff_ci_high": 0.3528351586127584
+      },
+      {
+        "model": "seara/rubert-base-cased-russian-sentiment",
+        "revision": "d09619927897994a405b7a087b2bb04c5921e3f7",
+        "slug": "seara__rubert-base-cased-russian-sentiment@d0961992",
+        "n": 400,
+        "accuracy": 0.3025,
+        "macro_f1": 0.21989757399032653,
+        "f1_negative": 0.20588235294117646,
+        "f1_neutral": 0.43121149897330596,
+        "f1_positive": 0.022598870056497175,
+        "macro_f1_ci_low": 0.18198441167970972,
+        "macro_f1_ci_high": 0.2593696276669189,
+        "diff_vs_best": 0.25032902571519855,
+        "diff_ci_low": 0.1943814676186454,
+        "diff_ci_high": 0.3024227626938929
+      },
+      {
+        "model": "mxlcw/rubert-tiny2-russian-financial-sentiment",
+        "revision": "a02913e44597582218db7821d52dc15c331bf427",
+        "slug": "mxlcw__rubert-tiny2-russian-financial-sentiment@a02913e4",
+        "n": 400,
+        "accuracy": 0.46,
+        "macro_f1": 0.47022659970552505,
+        "f1_negative": 0.5492227979274611,
+        "f1_neutral": 0.43575418994413406,
+        "f1_positive": 0.42570281124497994,
+        "macro_f1_ci_low": 0.4177291376646092,
+        "macro_f1_ci_high": 0.5173653073317332,
+        "diff_vs_best": 0.0,
+        "diff_ci_low": 0.0,
+        "diff_ci_high": 0.0
+      }
+    ]
+  }
+}
